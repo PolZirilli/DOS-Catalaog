@@ -15,6 +15,7 @@ let currentGenre = null;
 
 const state = { focus: 'left', leftIndex: 0, rightIndex: 0 };
 const openWins = {};
+const dosInstances = {};
 let zTop = 100;
 
 const panelLeftList = document.getElementById('panelLeftList');
@@ -206,7 +207,7 @@ function launchGame(g) {
     <div class="titlebar">
       <div class="titlebar-title">${g.name.toUpperCase()}.EXE</div>
       <div class="win-controls">
-        <span class="win-btn min">[_]</span>
+        <span class="win-btn max">[□]</span>
         <span class="win-btn close">[X]</span>
       </div>
     </div>
@@ -249,7 +250,7 @@ function launchGame(g) {
       container.className = 'jsdos-container';
       body.appendChild(container);
       if (window.Dos) {
-        Dos(container, {}).run(g.bundle);
+        dosInstances[g.id] = Dos(container, {}).run(g.bundle);
       } else {
         container.style.color = '#f66';
         container.style.padding = '14px';
@@ -262,7 +263,7 @@ function launchGame(g) {
 
   win.addEventListener('mousedown', () => focusWin(g.id));
   win.querySelector('.win-btn.close').addEventListener('click', e => { e.stopPropagation(); closeWin(g.id); });
-  win.querySelector('.win-btn.min').addEventListener('click', e => { e.stopPropagation(); minimizeWin(g.id); });
+  win.querySelector('.win-btn.max').addEventListener('click', e => { e.stopPropagation(); win.classList.toggle('maximized'); });
   makeDraggable(win, win.querySelector('.titlebar'));
 
   addRunningTab(g);
@@ -306,6 +307,10 @@ function closeWin(id) {
   const win = openWins[id];
   if (win) win.remove();
   delete openWins[id];
+  if (dosInstances[id]) {
+    dosInstances[id].then(ci => { if (ci && ci.exit) ci.exit(); }).catch(() => {});
+    delete dosInstances[id];
+  }
   const tab = runningEl.querySelector(`.running-tab[data-id="${id}"]`);
   if (tab) tab.remove();
 }
