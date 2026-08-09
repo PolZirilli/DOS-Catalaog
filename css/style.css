@@ -149,7 +149,7 @@ body {
   display:flex; flex-direction:column;
   z-index:100;
 }
-.window.maximized { top:0 !important; left:0 !important; right:0; bottom:76px; width:auto !important; height:auto !important; }
+.window.maximized { top:0 !important; left:0 !important; right:0; bottom:100px; width:auto !important; height:auto !important; }
 .titlebar {
   height:24px; flex-shrink:0;
   background:#00aaaa;
