@@ -10,7 +10,7 @@
   },
   "games": [
     { "id": "demo", "name": "Demo js-dos (motor real)", "genre": "test", "year": "—", "bundle": "https://cdn.dos.zone/original/2X/2/24b00b14f118580763440ecaddcc948f8cb94f14.jsdos" },
-    { "id": "abuse", "name": "Abuse", "genre": "fps", "year": "1995", "bundle": "games/abuse.jsdos" },
+
     { "id": "doom", "name": "Doom", "genre": "fps", "year": "1993", "bundle": null },
     { "id": "doom2", "name": "Doom II", "genre": "fps", "year": "1994", "bundle": null },
     { "id": "wolf3d", "name": "Wolfenstein 3D", "genre": "fps", "year": "1992", "bundle": null },
@@ -18,6 +18,33 @@
     { "id": "blood", "name": "Blood", "genre": "fps", "year": "1997", "bundle": null },
     { "id": "quake", "name": "Quake", "genre": "fps", "year": "1996", "bundle": null },
     { "id": "quake2", "name": "Quake II", "genre": "fps", "year": "1997", "bundle": null },
-    { "id": "halflife", "name": "Half-Life", "genre": "fps", "year": "1998", "bundle": null }
+    { "id": "halflife", "name": "Half-Life", "genre": "fps", "year": "1998", "bundle": null },
+
+    { "id": "pop1", "name": "Prince of Persia", "genre": "adv", "year": "1990", "bundle": null },
+    { "id": "pop2", "name": "Prince of Persia 2", "genre": "adv", "year": "1993", "bundle": null },
+    { "id": "monkey", "name": "Monkey Island", "genre": "adv", "year": "1990", "bundle": null },
+    { "id": "dott", "name": "Day of the Tentacle", "genre": "adv", "year": "1993", "bundle": null },
+    { "id": "kq", "name": "King's Quest", "genre": "adv", "year": "1990", "bundle": null },
+
+    { "id": "warcraft2", "name": "Warcraft II", "genre": "rts", "year": "1995", "bundle": null },
+    { "id": "cnc", "name": "Command & Conquer", "genre": "rts", "year": "1995", "bundle": null },
+    { "id": "redalert", "name": "Red Alert", "genre": "rts", "year": "1996", "bundle": null },
+    { "id": "aoe", "name": "Age of Empires", "genre": "rts", "year": "1997", "bundle": null },
+    { "id": "aoe2", "name": "Age of Empires II", "genre": "rts", "year": "1999", "bundle": null },
+    { "id": "dune2", "name": "Dune II", "genre": "rts", "year": "1992", "bundle": null },
+
+    { "id": "diablo", "name": "Diablo", "genre": "rpg", "year": "1996", "bundle": null },
+    { "id": "homm3", "name": "Heroes of Might & Magic III", "genre": "rpg", "year": "1999", "bundle": null },
+    { "id": "baldur", "name": "Baldur's Gate", "genre": "rpg", "year": "1998", "bundle": null },
+    { "id": "fallout", "name": "Fallout", "genre": "rpg", "year": "1997", "bundle": null },
+
+    { "id": "xcom", "name": "X-COM: UFO Defense", "genre": "sim", "year": "1994", "bundle": null },
+    { "id": "simcity2000", "name": "SimCity 2000", "genre": "sim", "year": "1993", "bundle": null },
+    { "id": "themehosp", "name": "Theme Hospital", "genre": "sim", "year": "1997", "bundle": null },
+    { "id": "rct", "name": "RollerCoaster Tycoon", "genre": "sim", "year": "1999", "bundle": null },
+
+    { "id": "nfs", "name": "The Need for Speed", "genre": "race", "year": "1995", "bundle": null },
+    { "id": "testdrive", "name": "Test Drive", "genre": "race", "year": "1987", "bundle": null },
+    { "id": "worms", "name": "Worms", "genre": "race", "year": "1995", "bundle": null }
   ]
 }
