@@ -167,7 +167,7 @@ body {
 }
 .win-btn:hover { color:#fff; }
 .win-body {
-  flex:1; background:#000; color:#c0c0c0;
+  flex:1; background:#000; color #01aaaa;
   font-family: 'Consolas','Courier New', monospace;
   font-size:13px; padding:14px;
   overflow:auto;
