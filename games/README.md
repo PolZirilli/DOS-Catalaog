@@ -4,5 +4,3 @@ de hostearlos en otro lado), y apuntá el campo `"bundle"` de
 
 Ver el README principal del proyecto para cómo generar un `.jsdos` a partir
 de un juego que ya tengas (CD original, instalador DRM-free, etc.).
-
-games/abuse.jsdos
