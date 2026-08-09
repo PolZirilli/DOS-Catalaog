@@ -7,35 +7,186 @@
   }
 })();
 
-const desktop = document.getElementById('desktop');
-const taskItems = document.getElementById('taskItems');
-let zTop = 100;
-const openWins = {};
 let GENRES = {};
 let GAMES = [];
+let LEFT_ITEMS = [];
+let RIGHT_ITEMS = [];
+let currentGenre = null;
+
+const state = { focus: 'left', leftIndex: 0, rightIndex: 0 };
+const openWins = {};
+let zTop = 100;
+
+const panelLeftList = document.getElementById('panelLeftList');
+const panelRightList = document.getElementById('panelRightList');
+const panelRightHeader = document.getElementById('panelRightHeader');
+const cmdline = document.getElementById('cmdline');
+const runningEl = document.getElementById('running');
+const fkeysEl = document.getElementById('fkeys');
 
 function initials(name) {
   return name.replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
 // Intenta cargar icons/<id>.png|jpg; si no existe, muestra las iniciales del juego.
-// Cuando tengas el icono real de un juego, poné el archivo en icons/<id>.png y aparece solo.
-function iconArtHTML(g, withArrow) {
+function iconArtHTML(g) {
   return `<img src="icons/${g.id}.png" alt=""
       onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';"
-    ><span class="icon-fallback">${initials(g.name)}</span>${withArrow ? '<span class="arrow"></span>' : ''}`;
+    ><span class="icon-fallback">${initials(g.name)}</span>`;
 }
 
-function selectIcon(el) {
-  document.querySelectorAll('.icon.selected').forEach(i => i.classList.remove('selected'));
-  el.classList.add('selected');
+function buildLeftItems() {
+  LEFT_ITEMS = Object.keys(GENRES).map(id => {
+    const count = GAMES.filter(g => g.genre === id).length;
+    return { id, label: GENRES[id], count };
+  }).filter(item => item.count > 0);
 }
 
-document.body.addEventListener('click', () => {
-  document.querySelectorAll('.icon.selected').forEach(i => i.classList.remove('selected'));
-  closeStartMenu();
+function renderLeftPanel() {
+  panelLeftList.innerHTML = '';
+  LEFT_ITEMS.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'panel-row is-dir' + (state.focus === 'left' && i === state.leftIndex ? ' selected' : '');
+    row.innerHTML = `<div class="col-name">${item.label.toUpperCase()}\\</div><div class="col-extra">${item.count}</div>`;
+    row.addEventListener('click', () => {
+      state.focus = 'left';
+      state.leftIndex = i;
+      selectGenre(item.id);
+      render();
+    });
+    row.addEventListener('dblclick', () => {
+      state.focus = 'right';
+      render();
+    });
+    panelLeftList.appendChild(row);
+  });
+}
+
+function selectGenre(genreId) {
+  currentGenre = genreId;
+  state.rightIndex = 0;
+  RIGHT_ITEMS = GAMES.filter(g => g.genre === genreId);
+  const label = GENRES[genreId] || genreId;
+  panelRightHeader.textContent = `C:\\${label.toUpperCase()}`;
+}
+
+function renderRightPanel() {
+  panelRightList.innerHTML = '';
+  RIGHT_ITEMS.forEach((g, i) => {
+    const row = document.createElement('div');
+    row.className = 'panel-row is-file' + (state.focus === 'right' && i === state.rightIndex ? ' selected' : '');
+    row.innerHTML = `
+      <div class="col-name">
+        <span class="panel-icon">${iconArtHTML(g)}</span>
+        <span>${g.name} <span style="opacity:.6">.exe</span></span>
+      </div>
+      <div class="col-extra">${g.year}</div>`;
+    row.addEventListener('click', () => {
+      state.focus = 'right';
+      state.rightIndex = i;
+      render();
+    });
+    row.addEventListener('dblclick', () => launchGame(g));
+    panelRightList.appendChild(row);
+  });
+}
+
+function updateCmdline() {
+  let path = 'C:\\CATEGORIAS';
+  if (currentGenre) {
+    path += `\\${(GENRES[currentGenre] || currentGenre).toUpperCase()}`;
+    if (state.focus === 'right' && RIGHT_ITEMS[state.rightIndex]) {
+      path += `\\${RIGHT_ITEMS[state.rightIndex].id.toUpperCase()}.EXE`;
+    }
+  }
+  cmdline.innerHTML = `${path}&gt;<span class="cursor-blink"></span>`;
+}
+
+function render() {
+  renderLeftPanel();
+  renderRightPanel();
+  updateCmdline();
+}
+
+function moveSelection(delta) {
+  if (state.focus === 'left') {
+    if (!LEFT_ITEMS.length) return;
+    state.leftIndex = (state.leftIndex + delta + LEFT_ITEMS.length) % LEFT_ITEMS.length;
+    selectGenre(LEFT_ITEMS[state.leftIndex].id);
+  } else {
+    if (!RIGHT_ITEMS.length) return;
+    state.rightIndex = (state.rightIndex + delta + RIGHT_ITEMS.length) % RIGHT_ITEMS.length;
+  }
+  render();
+}
+
+function switchFocus() {
+  if (state.focus === 'left') {
+    if (!currentGenre && LEFT_ITEMS.length) selectGenre(LEFT_ITEMS[state.leftIndex].id);
+    state.focus = 'right';
+  } else {
+    state.focus = 'left';
+  }
+  render();
+}
+
+function activateSelection() {
+  if (state.focus === 'left') {
+    switchFocus();
+  } else if (RIGHT_ITEMS[state.rightIndex]) {
+    launchGame(RIGHT_ITEMS[state.rightIndex]);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  switch (e.key) {
+    case 'ArrowUp': e.preventDefault(); moveSelection(-1); break;
+    case 'ArrowDown': e.preventDefault(); moveSelection(1); break;
+    case 'Tab':
+    case 'ArrowLeft':
+    case 'ArrowRight': e.preventDefault(); switchFocus(); break;
+    case 'Enter': e.preventDefault(); activateSelection(); break;
+    case 'F1': e.preventDefault(); showHelp(); break;
+    case 'F5': e.preventDefault(); render(); break;
+  }
 });
 
+function showHelp() {
+  cmdline.innerHTML = 'Flechas: moverse &nbsp;|&nbsp; Tab: cambiar panel &nbsp;|&nbsp; Enter: abrir/ejecutar<span class="cursor-blink"></span>';
+  setTimeout(updateCmdline, 2500);
+}
+
+/* ---------- FKEYS ---------- */
+const FKEYS = [
+  { key: 'F1', label: 'Ayuda', action: showHelp },
+  { key: 'F3', label: 'Info', action: () => {
+      const g = RIGHT_ITEMS[state.rightIndex];
+      if (state.focus === 'right' && g) {
+        cmdline.innerHTML = `${g.name} — ${GENRES[g.genre] || g.genre} — ${g.year}<span class="cursor-blink"></span>`;
+        setTimeout(updateCmdline, 2500);
+      }
+  } },
+  { key: 'F4', label: 'Ejecutar', action: activateSelection },
+  { key: 'F5', label: 'Refrescar', action: render },
+  { key: 'F10', label: 'Cerrar activa', action: () => {
+      const ids = Object.keys(openWins);
+      if (ids.length) closeWin(ids[ids.length - 1]);
+  } },
+];
+
+function renderFkeys() {
+  fkeysEl.innerHTML = '';
+  FKEYS.forEach(fk => {
+    const el = document.createElement('div');
+    el.className = 'fkey';
+    el.innerHTML = `<span class="num">${fk.key}</span>${fk.label}`;
+    el.addEventListener('click', fk.action);
+    fkeysEl.appendChild(el);
+  });
+}
+
+/* ---------- WINDOWS / JS-DOS ---------- */
 function launchGame(g) {
   if (openWins[g.id]) {
     focusWin(g.id);
@@ -45,32 +196,31 @@ function launchGame(g) {
   const win = document.createElement('div');
   win.className = 'window';
   const w = 520, h = 360;
-  const left = 60 + Object.keys(openWins).length * 24;
-  const top = 40 + Object.keys(openWins).length * 24;
+  const left = 40 + Object.keys(openWins).length * 24;
+  const top = 30 + Object.keys(openWins).length * 24;
   win.style.width = w + 'px'; win.style.height = h + 'px';
   win.style.left = left + 'px'; win.style.top = top + 'px';
   win.style.zIndex = ++zTop;
 
   win.innerHTML = `
     <div class="titlebar">
-      <div class="titlebar-title"><span class="icon-art g-${g.genre}" style="width:16px;height:16px;font-size:10px;">${iconArtHTML(g, false)}</span> ${g.name}</div>
+      <div class="titlebar-title">${g.name.toUpperCase()}.EXE</div>
       <div class="win-controls">
-        <div class="win-btn min">_</div>
-        <div class="win-btn max">\u25A1</div>
-        <div class="win-btn close">\u2715</div>
+        <span class="win-btn min">[_]</span>
+        <span class="win-btn close">[X]</span>
       </div>
     </div>
     <div class="win-body">
       <div class="boot-lines"></div>
       <div class="win-screen" style="display:none;">
-        <div class="icon-art g-${g.genre} big-icon">${iconArtHTML(g, false)}</div>
+        <div class="panel-icon big-icon">${iconArtHTML(g)}</div>
         <div class="big-title">${g.name.toUpperCase()}</div>
         <div class="hint">Todavía no hay un bundle .jsdos asignado a este juego. Agregalo en data/games.json (campo "bundle") o dejalo local en la carpeta games/ para que arranque acá el motor real.</div>
         <div style="margin-top:16px;">C:\\GAMES\\${g.id.toUpperCase()}&gt;<span class="cursor-blink"></span></div>
       </div>
     </div>
   `;
-  desktop.parentElement.insertBefore(win, document.getElementById('taskbar'));
+  document.body.appendChild(win);
   openWins[g.id] = win;
 
   const bootLines = win.querySelector('.boot-lines');
@@ -94,7 +244,6 @@ function launchGame(g) {
   setTimeout(() => {
     bootLines.style.display = 'none';
     if (g.bundle) {
-      // Hay un bundle .jsdos real: montamos el motor de emulación de verdad.
       body.classList.add('no-pad');
       const container = document.createElement('div');
       container.className = 'jsdos-container';
@@ -114,40 +263,38 @@ function launchGame(g) {
   win.addEventListener('mousedown', () => focusWin(g.id));
   win.querySelector('.win-btn.close').addEventListener('click', e => { e.stopPropagation(); closeWin(g.id); });
   win.querySelector('.win-btn.min').addEventListener('click', e => { e.stopPropagation(); minimizeWin(g.id); });
-  win.querySelector('.win-btn.max').addEventListener('click', e => { e.stopPropagation(); win.classList.toggle('maximized'); });
   makeDraggable(win, win.querySelector('.titlebar'));
 
-  addTaskButton(g);
-  closeStartMenu();
+  addRunningTab(g);
 }
 
-function addTaskButton(g) {
-  const btn = document.createElement('div');
-  btn.className = 'task-btn pressed';
-  btn.dataset.id = g.id;
-  btn.innerHTML = `<span class="icon-art g-${g.genre}" style="width:16px;height:16px;font-size:9px;">${iconArtHTML(g, false)}</span><span>${g.name}</span>`;
-  btn.addEventListener('click', () => {
+function addRunningTab(g) {
+  const tab = document.createElement('div');
+  tab.className = 'running-tab active';
+  tab.dataset.id = g.id;
+  tab.textContent = g.name.toUpperCase() + '.EXE';
+  tab.addEventListener('click', () => {
     const win = openWins[g.id];
     if (!win) return;
     if (win.style.display === 'none') { restoreWin(g.id); }
     else if (parseInt(win.style.zIndex) === zTop) { minimizeWin(g.id); }
     else { focusWin(g.id); }
   });
-  taskItems.appendChild(btn);
+  runningEl.appendChild(tab);
 }
 
 function focusWin(id) {
   const win = openWins[id];
   if (!win) return;
   win.style.zIndex = ++zTop;
-  document.querySelectorAll('.task-btn').forEach(b => b.classList.toggle('pressed', b.dataset.id === id));
+  document.querySelectorAll('.running-tab').forEach(b => b.classList.toggle('active', b.dataset.id === id));
 }
 function minimizeWin(id) {
   const win = openWins[id];
   if (!win) return;
   win.style.display = 'none';
-  const btn = taskItems.querySelector(`.task-btn[data-id="${id}"]`);
-  if (btn) btn.classList.remove('pressed');
+  const tab = runningEl.querySelector(`.running-tab[data-id="${id}"]`);
+  if (tab) tab.classList.remove('active');
 }
 function restoreWin(id) {
   const win = openWins[id];
@@ -159,8 +306,8 @@ function closeWin(id) {
   const win = openWins[id];
   if (win) win.remove();
   delete openWins[id];
-  const btn = taskItems.querySelector(`.task-btn[data-id="${id}"]`);
-  if (btn) btn.remove();
+  const tab = runningEl.querySelector(`.running-tab[data-id="${id}"]`);
+  if (tab) tab.remove();
 }
 
 function makeDraggable(win, handle) {
@@ -179,72 +326,19 @@ function makeDraggable(win, handle) {
   document.addEventListener('mouseup', () => dragging = false);
 }
 
-const startMenu = document.getElementById('startMenu');
-const startMenuList = document.getElementById('startMenuList');
-const startBtn = document.getElementById('startBtn');
-
-function renderCatalog() {
-  const byGenre = {};
-  GAMES.forEach(g => { (byGenre[g.genre] = byGenre[g.genre] || []).push(g); });
-
-  desktop.innerHTML = '';
-  GAMES.forEach(g => {
-    const el = document.createElement('div');
-    el.className = 'icon';
-    el.innerHTML = `<div class="icon-art g-${g.genre}">${iconArtHTML(g, true)}</div><div class="icon-label">${g.name}</div>`;
-    el.addEventListener('click', e => { e.stopPropagation(); selectIcon(el); });
-    el.addEventListener('dblclick', e => { e.stopPropagation(); launchGame(g); });
-    desktop.appendChild(el);
-  });
-
-  startMenuList.innerHTML = '';
-  Object.keys(GENRES).forEach(genre => {
-    if (!byGenre[genre]) return;
-    const header = document.createElement('div');
-    header.className = 'menu-item';
-    header.style.fontWeight = 'bold';
-    header.style.opacity = '0.75';
-    header.textContent = GENRES[genre];
-    startMenuList.appendChild(header);
-    byGenre[genre].forEach(g => {
-      const item = document.createElement('div');
-      item.className = 'menu-item';
-      item.innerHTML = `<span class="icon-art g-${g.genre}" style="width:18px;height:18px;font-size:10px;">${iconArtHTML(g, false)}</span><span>${g.name}</span>`;
-      item.addEventListener('click', e => { e.stopPropagation(); launchGame(g); });
-      startMenuList.appendChild(item);
-    });
-    const sep = document.createElement('div');
-    sep.className = 'menu-sep';
-    startMenuList.appendChild(sep);
-  });
-}
-
-startBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  startMenu.classList.toggle('open');
-  startBtn.classList.toggle('active');
-});
-function closeStartMenu() {
-  startMenu.classList.remove('open');
-  startBtn.classList.remove('active');
-}
-startMenu.addEventListener('click', e => e.stopPropagation());
-
-function tick() {
-  const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-}
-tick();
-setInterval(tick, 15000);
+/* ---------- LOAD ---------- */
+renderFkeys();
 
 fetch('data/games.json')
   .then(r => r.json())
   .then(data => {
     GENRES = data.genres;
     GAMES = data.games;
-    renderCatalog();
+    buildLeftItems();
+    if (LEFT_ITEMS.length) selectGenre(LEFT_ITEMS[0].id);
+    render();
   })
   .catch(err => {
-    desktop.innerHTML = '<div style="color:#fff;padding:20px;max-width:420px;">No se pudo cargar data/games.json. Si abriste el archivo directo (file://), corré un servidor local — ver README.md.</div>';
+    panelRightList.innerHTML = '<div class="panel-row" style="color:#fff;padding:20px;">No se pudo cargar data/games.json. Si abriste el archivo directo (file://), corré un servidor local — ver README.md.</div>';
     console.error(err);
   });
