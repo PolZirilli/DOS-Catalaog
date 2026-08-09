@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Catálogo DOS / Win2000</title>
+<title>Catálogo DOS</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="js/vendor/js-dos/js-dos.css">
 </head>
 <body>
 
 <div id="mobileBlock">
-  <div class="mb-dialog">
+  <div class="mb-dialog nc-frame">
     <div class="mb-titlebar">Aviso del sistema</div>
     <div class="mb-body">
       <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden="true">
@@ -18,25 +18,28 @@
         <rect x="11" y="9" width="2" height="6" fill="#000"></rect>
         <rect x="11" y="16" width="2" height="2" fill="#000"></rect>
       </svg>
-      <p><span class="mb-strong">Este catálogo requiere una computadora de escritorio.</span>La emulación de DOS y Windows necesita teclado, mouse y más potencia de la que un navegador móvil puede ofrecer. Abrí este sitio desde tu PC para continuar.</p>
+      <p><span class="mb-strong">Este catálogo requiere una computadora de escritorio.</span>La emulación de DOS necesita teclado, mouse y más potencia de la que un navegador móvil puede ofrecer. Abrí este sitio desde tu PC para continuar.</p>
     </div>
   </div>
 </div>
 
-<div id="desktop"></div>
-<div id="startMenu">
-  <div id="startMenuSide">CATÁLOGO</div>
-  <div id="startMenuList"></div>
-</div>
-
-<div id="taskbar">
-  <div id="startBtn">
-    <span class="start-logo"><span></span><span></span><span></span><span></span></span>
-    Inicio
+<div id="shell">
+  <div id="panels">
+    <div class="panel nc-frame" id="panelLeft">
+      <div class="panel-header" id="panelLeftHeader">E:\CATEGORIAS</div>
+      <div class="panel-cols"><div class="col-name">Nombre</div></div>
+      <div class="panel-list" id="panelLeftList"></div>
+    </div>
+    <div class="panel nc-frame" id="panelRight">
+      <div class="panel-header" id="panelRightHeader">C:\</div>
+      <div class="panel-cols"><div class="col-name">Nombre</div><div class="col-extra">Año</div></div>
+      <div class="panel-list" id="panelRightList"></div>
+    </div>
   </div>
-  <div id="taskDivider"></div>
-  <div id="taskItems"></div>
-  <div id="tray"><span id="clock">00:00</span></div>
+
+  <div id="cmdline">C:\&gt;<span class="cursor-blink"></span></div>
+  <div id="running"></div>
+  <div id="fkeys"></div>
 </div>
 
 <script src="js/vendor/js-dos/js-dos.js"></script>
