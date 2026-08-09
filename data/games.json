@@ -9,16 +9,13 @@
     "test": "Pruebas del motor"
   },
   "games": [
-    { "id": "demo", "name": "Demo js-dos (motor real)", "genre": "test", "year": "—", "bundle": "https://cdn.dos.zone/original/2X/2/24b00b14f118580763440ecaddcc948f8cb94f14.jsdos" },
-
+    
+    { "id": "abuse", "name": "Abuse", "genre": "fps", "year": "1995", "bundle": "games/abuse.jsdos"},
     { "id": "doom", "name": "Doom", "genre": "fps", "year": "1993", "bundle": null },
     { "id": "doom2", "name": "Doom II", "genre": "fps", "year": "1994", "bundle": null },
     { "id": "wolf3d", "name": "Wolfenstein 3D", "genre": "fps", "year": "1992", "bundle": null },
     { "id": "duke3d", "name": "Duke Nukem 3D", "genre": "fps", "year": "1996", "bundle": null },
     { "id": "blood", "name": "Blood", "genre": "fps", "year": "1997", "bundle": null },
-    { "id": "quake", "name": "Quake", "genre": "fps", "year": "1996", "bundle": null },
-    { "id": "quake2", "name": "Quake II", "genre": "fps", "year": "1997", "bundle": null },
-    { "id": "halflife", "name": "Half-Life", "genre": "fps", "year": "1998", "bundle": null },
 
     { "id": "pop1", "name": "Prince of Persia", "genre": "adv", "year": "1990", "bundle": null },
     { "id": "pop2", "name": "Prince of Persia 2", "genre": "adv", "year": "1993", "bundle": null },
