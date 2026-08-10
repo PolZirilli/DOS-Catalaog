@@ -301,6 +301,7 @@ function launchGame(g) {
 }
 
 function addRunningTab(g) {
+  if (!runningEl) return;
   const tab = document.createElement('div');
   tab.className = 'running-tab active';
   tab.dataset.id = g.id;
@@ -325,7 +326,7 @@ function minimizeWin(id) {
   const win = openWins[id];
   if (!win) return;
   win.style.display = 'none';
-  const tab = runningEl.querySelector(`.running-tab[data-id="${id}"]`);
+  const tab = runningEl ? runningEl.querySelector(`.running-tab[data-id="${id}"]`) : null;
   if (tab) tab.classList.remove('active');
 }
 function restoreWin(id) {
@@ -342,7 +343,7 @@ function closeWin(id) {
     dosInstances[id].then(ci => { if (ci && ci.exit) ci.exit(); }).catch(() => {});
     delete dosInstances[id];
   }
-  const tab = runningEl.querySelector(`.running-tab[data-id="${id}"]`);
+  const tab = runningEl ? runningEl.querySelector(`.running-tab[data-id="${id}"]`) : null;
   if (tab) tab.remove();
 }
 
