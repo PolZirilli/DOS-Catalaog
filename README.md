@@ -1,11 +1,8 @@
-# Catálogo DOS / Win2000 (proyecto personal)
+# Catálogo DOS / Win2000
 
-Prototipo funcional de un catálogo de juegos DOS/Win95/98/2000 con estética de
-escritorio Windows clásico, corriendo sobre [js-dos](https://js-dos.com) (DOSBox
-compilado a WebAssembly). Para uso personal, no comercial.
+Prototipo funcional de un catálogo de juegos DOS con estética de interface de DOS mediante Norton Commander, corriendo sobre [js-dos](https://js-dos.com) (DOSBox compilado a WebAssembly). Para uso personal, no comercial.
 
 ## Estructura
-
 ```
 dos-catalog/
 ├── index.html          → página principal (escritorio + taskbar)
