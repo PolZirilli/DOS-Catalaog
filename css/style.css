@@ -1,7 +1,7 @@
 * { box-sizing: border-box; margin:0; padding:0; }
 html,body { height:100%; overflow:hidden; }
 body {
-  font-family: Consolas, 'Courier New', monospace;
+  font-family: 'Perfect DOS VGA 437', Consolas, 'Courier New', monospace;
   background: #0000aa;
   height:100vh; width:100vw; position:relative; user-select:none;
   cursor: default;
@@ -51,9 +51,8 @@ body {
   font-size:13px;
   border-bottom:1px solid #55aaff;
 }
-.panel-cols .col-name { flex:1; }
+.panel-cols .col-name { flex:1; text-transform: uppercase; }
 .panel-cols .col-extra { width:64px; text-align:right; }
-.panel-cols .col-name {text-transform: uppercase;}
 
 .panel-list {
   flex:1;
@@ -97,6 +96,22 @@ body {
   color:#fff; font-weight:bold; font-size:inherit;
 }
 
+/* barra de estado por panel: item seleccionado + fecha/hora, como en NC real */
+.panel-status {
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  background:#00aaaa;
+  color:#000;
+  font-size:13px;
+  padding:2px 6px;
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.panel-status .st-name { overflow:hidden; text-overflow:ellipsis; }
+.panel-status .st-date { flex-shrink:0; }
+
 /* ---------- CMDLINE + RUNNING + FKEYS ---------- */
 #cmdline {
   color:#fff;
@@ -123,7 +138,7 @@ body {
 #fkeys {
   display:flex;
   background:#000;
-  font-size:12px;
+  font-size:13px;
 }
 .fkey {
   flex:1;
@@ -131,15 +146,20 @@ body {
   align-items:center;
   white-space:nowrap;
   overflow:hidden;
-  padding:3px 2px;
-  color:#00ffff;
+  padding:3px 0;
   cursor:pointer;
 }
 .fkey .num {
-  background:#aaaaaa; color:#000;
-  padding:0 4px;
-  margin-right:4px;
+  color:#c0c0c0;
+  background:transparent;
+  padding:0 4px 0 2px;
   font-weight:bold;
+}
+.fkey .label {
+  background:#00aaaa;
+  color:#000;
+  padding:0 4px;
+  flex:1;
 }
 
 /* ---------- WINDOW (juego corriendo) ---------- */
@@ -168,8 +188,8 @@ body {
 }
 .win-btn:hover { color:#fff; }
 .win-body {
-  flex:1; background:#000; color #01aaaa;
-  font-family: 'Consolas','Courier New', monospace;
+  flex:1; background:#000; color:#01aaaa;
+  font-family: 'Perfect DOS VGA 437', Consolas, 'Courier New', monospace;
   font-size:13px; padding:14px;
   overflow:auto;
   display:flex; flex-direction:column;
