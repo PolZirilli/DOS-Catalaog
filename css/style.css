@@ -44,6 +44,7 @@ body {
   padding:2px 2px 4px;
   border-bottom:1px solid #55aaff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size: 1.5rem;
 }
 
 .panel-cols {
@@ -66,7 +67,7 @@ body {
   display:flex;
   align-items:center;
   padding:2px 2px;
-  font-size:14px;
+  font-size:1.4rem;
   cursor:pointer;
   white-space:nowrap;
 }
@@ -117,7 +118,7 @@ body {
 /* ---------- CMDLINE + RUNNING + FKEYS ---------- */
 #cmdline {
   color:#fff;
-  font-size:13px;
+  font-size: 1.4rem;
   padding:2px 4px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
@@ -140,7 +141,7 @@ body {
 #fkeys {
   display:flex;
   background:#000;
-  font-size:13px;
+  font-size: 1.15rem;
 }
 .fkey {
   flex:1;
