@@ -94,7 +94,6 @@ function renderRightPanel() {
     row.className = 'panel-row is-file' + (state.focus === 'right' && i === state.rightIndex ? ' selected' : '');
     row.innerHTML = `
       <div class="col-name">
-        <span class="panel-icon">${iconArtHTML(g)}</span>
         <span>${g.name} <span style="opacity:.6">.exe</span></span>
       </div>
       <div class="col-extra">${g.year}</div>`;
