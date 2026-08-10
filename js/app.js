@@ -21,9 +21,25 @@ let zTop = 100;
 const panelLeftList = document.getElementById('panelLeftList');
 const panelRightList = document.getElementById('panelRightList');
 const panelRightHeader = document.getElementById('panelRightHeader');
+const panelLeftStatus = document.getElementById('panelLeftStatus');
+const panelRightStatus = document.getElementById('panelRightStatus');
 const cmdline = document.getElementById('cmdline');
 const runningEl = document.getElementById('running');
 const fkeysEl = document.getElementById('fkeys');
+
+// Genera una fecha/hora ficticia pero estable para un id (no tenemos fecha real de archivo).
+function fakeDate(id, year) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  const month = (h % 12) + 1;
+  const day = (h % 28) + 1;
+  const hour = (h % 12) + 1;
+  const min = (h * 7) % 60;
+  const ampm = h % 2 === 0 ? 'a' : 'p';
+  const yy = String(year).slice(-2);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(month)}-${pad(day)}-${yy}  ${hour}:${pad(min)}${ampm}`;
+}
 
 function initials(name) {
   return name.replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -103,10 +119,26 @@ function updateCmdline() {
   cmdline.innerHTML = `${path}&gt;<span class="cursor-blink"></span>`;
 }
 
+function updateStatusBars() {
+  const leftItem = LEFT_ITEMS[state.leftIndex];
+  if (leftItem) {
+    panelLeftStatus.innerHTML = `<span class="st-name">${leftItem.label.toUpperCase()}\\ &lt;DIR&gt;</span><span class="st-date">${fakeDate(leftItem.id, 1994)}</span>`;
+  } else {
+    panelLeftStatus.innerHTML = '';
+  }
+  const rightItem = RIGHT_ITEMS[state.rightIndex];
+  if (rightItem) {
+    panelRightStatus.innerHTML = `<span class="st-name">${rightItem.name.toUpperCase()}.EXE</span><span class="st-date">${fakeDate(rightItem.id, rightItem.year)}</span>`;
+  } else {
+    panelRightStatus.innerHTML = '';
+  }
+}
+
 function render() {
   renderLeftPanel();
   renderRightPanel();
   updateCmdline();
+  updateStatusBars();
 }
 
 function moveSelection(delta) {
@@ -181,7 +213,7 @@ function renderFkeys() {
   FKEYS.forEach(fk => {
     const el = document.createElement('div');
     el.className = 'fkey';
-    el.innerHTML = `<span class="num">${fk.key}</span>${fk.label}`;
+    el.innerHTML = `<span class="num">${fk.key.replace('F', '')}</span><span class="label">${fk.label}</span>`;
     el.addEventListener('click', fk.action);
     fkeysEl.appendChild(el);
   });
