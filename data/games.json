@@ -1,21 +1,19 @@
 {
   "genres": {
-    "fps": "Acción / FPS",
+    "fps": "FPS",
+    "accion": "Acción",
     "rts": "Estrategia",
     "adv": "Aventura",
     "rpg": "Rol",
     "sim": "Simulación",
-    "race": "Carreras / Arcade",
+    "arcade": "Arcade",
+    "race": "Carreras",
     "test": "Pruebas del motor"
   },
   "games": [
     
-    { "id": "abuse", "name": "Abuse", "genre": "fps", "year": "1995", "bundle": "games/abuse.jsdos"},
-    { "id": "doom", "name": "Doom", "genre": "fps", "year": "1993", "bundle": null },
-    { "id": "doom2", "name": "Doom II", "genre": "fps", "year": "1994", "bundle": null },
-    { "id": "wolf3d", "name": "Wolfenstein 3D", "genre": "fps", "year": "1992", "bundle": null },
-    { "id": "duke3d", "name": "Duke Nukem 3D", "genre": "fps", "year": "1996", "bundle": null },
-    { "id": "blood", "name": "Blood", "genre": "fps", "year": "1997", "bundle": null },
+    { "id": "quake", "name": "Quake", "genre": "fps", "year": "1996", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/catdos/quake.jsdos"},
+    { "id": "blood", "name": "Blood", "genre": "accion", "year": "1997", "bundle": null },
 
     { "id": "pop1", "name": "Prince of Persia", "genre": "adv", "year": "1990", "bundle": null },
     { "id": "pop2", "name": "Prince of Persia 2", "genre": "adv", "year": "1993", "bundle": null },
