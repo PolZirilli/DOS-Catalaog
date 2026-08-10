@@ -183,12 +183,17 @@ body {
 }
 .window.maximized { top:0 !important; left:0 !important; right:0; bottom:100px; width:auto !important; height:auto !important; }
 .titlebar {
-  height:24px; flex-shrink:0;
-  background:#00aaaa;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:0 4px 0 6px;
-  cursor:move;
-  color:#000; font-size:13px; font-weight:bold;
+    height: 24px;
+    flex-shrink: 0;
+    background: #9E9E9E;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 4px 0 6px;
+    cursor: move;
+    color: #000;
+    font-size: 1rem;
+    font-weight: bold;
 }
 .titlebar-title { display:flex; align-items:center; gap:6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .win-controls { display:flex; gap:6px; font-size:12px; }
