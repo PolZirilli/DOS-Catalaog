@@ -19,6 +19,8 @@
     { "id": "prince", "name": "PRINCE", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/prince.jsdos"},
     { "id": "indy3", "name": "INDY3", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy3.jsdos"},
     { "id": "indy4", "name": "ATLANTIS", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy4.jsdos"},
+    { "id": "monkeyega", "name": "MONKEYEGA", "genre": "adv", "year": "1990", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/mnkyega.jsdos"},
+    { "id": "monkey", "name": "MONKEY", "genre": "adv", "year": "1990", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/monkey.jsdos"},
 
     { "id": "goldenaxe", "name": "JAZZJACK", "genre": "arcade", "year": "1994", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/jazz.jsdos"},
     
