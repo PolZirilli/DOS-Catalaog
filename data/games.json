@@ -15,7 +15,8 @@
     { "id": "quake", "name": "Quake", "genre": "fps", "year": "1996", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/catdos/quake.jsdos"},
     { "id": "warcraft", "name": "Warcraft", "genre": "rts", "year": "1997", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft.jsdos" },
     { "id": "warcraft2", "name": "Warcraft 2", "genre": "rts", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft2.jsdos" },
-    { "id": "ijfoa", "name": "Indiana Jones and th fate of atlantis", "genre": "adv", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ijfoa.jsdos" }
+    { "id": "monkeyega", "name": "The Curse of Monkey Island (EGA)", "genre": "adv", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/mnkyega.jsdos" },
+    { "id": "monkey", "name": "The Curse of Monkey Island", "genre": "adv", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/monkey.jsdos" }
 
   ]
 }
