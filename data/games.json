@@ -20,7 +20,6 @@
     { "id": "indy3", "name": "INDY3", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy3.jsdos"},
     { "id": "indy4", "name": "ATLANTIS", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy4.jsdos"},
 
-    { "id": "goldenaxe", "name": "GOLDENAXE", "genre": "arcade", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/goldenaxe.jsdos"},
     { "id": "goldenaxe", "name": "JAZZJACK", "genre": "arcade", "year": "1994", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/jazz.jsdos"},
     
     { "id": "warcraft", "name": "WARCRAFT", "genre": "rts", "year": "1997", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft.jsdos" },
