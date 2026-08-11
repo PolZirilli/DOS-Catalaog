@@ -25,6 +25,7 @@
     { "id": "commanderkeen4", "name": "COMMKEEN4", "genre": "arcade", "year": "1994", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/commanderkeen4.jsdos"},
     { "id": "dangerousdave", "name": "DANGERDAVE", "genre": "arcade", "year": "1990", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/dangerousdave.jsdos"},
     { "id": "dukenukem2", "name": "DUKENUKEM2", "genre": "arcade", "year": "1991", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/dukenukem2.jsdos"},
+    { "id": "jazzjack", "name": "JAZZJACK", "genre": "arcade", "year": "1990", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/jazz.jsdos"},
     
     { "id": "warcraft", "name": "WARCRAFT", "genre": "rts", "year": "1997", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft.jsdos" },
     { "id": "warcraft2", "name": "WARCRAFT2", "genre": "rts", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft2.jsdos" },
