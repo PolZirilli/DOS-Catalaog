@@ -19,12 +19,12 @@
     { "id": "delirium", "name": "ESCAPE", "genre": "adv", "year": "1995", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/delirium.jsdos"},
     { "id": "prince", "name": "PRINCE", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/prince.jsdos"},
     
-    { "id": "tyrian", "name": "Tyrian", "genre": "accion", "year": "1995", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/tyrian.jsdos"},
+    { "id": "tyrian", "name": "TYRIAN", "genre": "accion", "year": "1995", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/tyrian.jsdos"},
     
-    { "id": "ultima8", "name": "Ultima VIII Pagan", "genre": "rpg", "year": "1994", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ultima8.jsdos"},
-    { "id": "warcraft", "name": "Warcraft", "genre": "rts", "year": "1997", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft.jsdos" },
-    { "id": "warcraft2", "name": "Warcraft 2", "genre": "rts", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft2.jsdos" },
+    { "id": "ultima8", "name": "ULTIMA8", "genre": "rpg", "year": "1994", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ultima8.jsdos"},
+    { "id": "warcraft", "name": "WARCRAFT", "genre": "rts", "year": "1997", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft.jsdos" },
+    { "id": "warcraft2", "name": "WARCRAFT2", "genre": "rts", "year": "1999", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/warcraft2.jsdos" },
     
-    { "id": "deathrally", "name": "DEATHRALLY", "genre": "carreras", "year": "1996", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/deathrally.jsdos"}
+    { "id": "deathrally", "name": "DEATHRALLY", "genre": "race", "year": "1996", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/deathrally.jsdos"}
   ]
 }
