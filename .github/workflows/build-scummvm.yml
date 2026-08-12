@@ -8,7 +8,9 @@ name: Build ScummVM (WebAssembly)
 #
 # Este workflow vive en TU repo (dosvault), pero compila el código fuente de
 # scummvm/scummvm (no el tuyo) usando su script oficial dists/emscripten/build.sh.
-
+permissions:
+  contents: write
+  
 on:
   workflow_dispatch:
     inputs:
