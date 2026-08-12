@@ -8,8 +8,7 @@
     "rpg": "Rol",
     "sim": "Simulación",
     "arcade": "Arcade",
-    "race": "Carreras",
-    "test": "Pruebas del motor"
+    "race": "Carreras"
   },
   "games": [
     { "id": "", "name": "", "genre": "", "year": "", "bundle": ""},
