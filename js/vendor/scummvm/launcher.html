@@ -33,17 +33,19 @@
 
   El juego a cargar se pasa por query string: launcher.html?bundle=<url>
   El bundle es un .zip con los archivos de datos crudos del juego (no un
-  .jsdos). Se descarga, se descomprime en el navegador con fflate y se monta
-  en /game antes de arrancar ScummVM, que se auto-lanza directo a ese juego
-  vía el argumento --path=/game (pasado por el hash de la URL, que es como
-  este build en particular lee Module["arguments"] — lo pisa si no viene
-  por ahí, así que NO alcanza con setear Module.arguments en JS).
+  .jsdos). Se descarga, se descomprime en el navegador con fflate, se elige
+  automáticamente la carpeta que contiene el juego (ver
+  pickGameFolderAndFlatten más abajo — muchos zips de abandonware traen el
+  juego adentro de "C/<CARPETA>/", junto con partidas guardadas, extras, o
+  hasta un ScummVM portable de Windows sueltos al lado) y se monta en /game
+  antes de arrancar ScummVM, que se auto-lanza directo a ese juego vía el
+  argumento --path=/game (pasado por el hash de la URL, que es como este
+  build en particular lee Module["arguments"] — lo pisa si no viene por ahí,
+  así que NO alcanza con setear Module.arguments en JS).
 
   IMPORTANTE: --auto-detect NO admite --recursive (ScummVM tira error si se
-  usan juntos). Como muchos zips traen los archivos del juego adentro de una
-  carpeta contenedora en vez de sueltos en la raíz, en vez de --recursive acá
-  abajo se detecta y se saca esa carpeta contenedora al montar los archivos
-  en /game, así siempre quedan al primer nivel.
+  usan juntos), por eso hace falta dejar los archivos del juego sueltos
+  directo en la raíz de /game en vez de confiar en una búsqueda recursiva.
 -->
 <script src="fflate.min.js"></script>
 <script>
@@ -65,20 +67,52 @@
   const dvParams = new URLSearchParams(window.location.search);
   const bundleUrl = dvParams.get('bundle');
 
-  // Si todos los archivos del zip comparten una única carpeta contenedora
-  // en el primer nivel (ej. "INDY3VGA/000.LFL"), la saca para que todo
-  // quede suelto en la raíz de /game ("000.LFL").
-  function stripCommonRootFolder(entries) {
-    const filePaths = Object.keys(entries).filter(p => !p.endsWith('/'));
-    if (filePaths.length === 0) return entries;
-    const firstSlash = filePaths[0].indexOf('/');
-    if (firstSlash === -1) return entries; // ya está plano
-    const prefix = filePaths[0].slice(0, firstSlash + 1);
-    const allShareIt = filePaths.every(p => p.startsWith(prefix));
-    if (!allShareIt) return entries;
-    const stripped = {};
-    filePaths.forEach(p => { stripped[p.slice(prefix.length)] = entries[p]; });
-    return stripped;
+  // Carpetas que suelen viajar al lado de la carpeta real del juego en
+  // packs de abandonware, y que nunca son el juego en sí.
+  const JUNK_DIR_NAMES = new Set(['saves', 'save', 'extras', 'extra', 'manual', 'manuals', 'docs', 'scummvm', 'dosbox']);
+
+  function pickGameFolderAndFlatten(rawEntries) {
+    // 1) descartar basura de macOS (__MACOSX/, ._archivo, .DS_Store) y
+    // carpetas vacías.
+    const files = {};
+    Object.keys(rawEntries).forEach(path => {
+      if (path.endsWith('/')) return;
+      if (path.indexOf('__MACOSX/') !== -1) return;
+      const base = path.split('/').pop();
+      if (base.startsWith('._') || base === '.DS_Store') return;
+      files[path] = rawEntries[path];
+    });
+
+    // 2) agrupar por carpeta contenedora (ruta completa) y quedarse con la
+    // que tiene más archivos, ignorando nombres de carpeta conocidos que
+    // no son el juego. Esto resuelve tanto "C/Indy3/*.LFL" (con Saves/,
+    // Extras/, y hasta un ScummVM/ portable al lado) como un zip ya plano
+    // (ahí la carpeta "ganadora" va a ser la raíz "").
+    const groups = {};
+    Object.keys(files).forEach(path => {
+      const slash = path.lastIndexOf('/');
+      const dir = slash === -1 ? '' : path.slice(0, slash);
+      (groups[dir] = groups[dir] || []).push(path);
+    });
+
+    let bestDir = null;
+    let bestCount = -1;
+    Object.keys(groups).forEach(dir => {
+      const lastSeg = dir.split('/').pop().toLowerCase();
+      if (JUNK_DIR_NAMES.has(lastSeg)) return;
+      if (groups[dir].length > bestCount) {
+        bestCount = groups[dir].length;
+        bestDir = dir;
+      }
+    });
+    if (bestDir === null) return files; // no debería pasar, por las dudas no tocar nada
+
+    const prefix = bestDir === '' ? '' : bestDir + '/';
+    const result = {};
+    groups[bestDir].forEach(path => {
+      result[path.slice(prefix.length)] = files[path];
+    });
+    return result;
   }
 
   if (!bundleUrl) {
@@ -98,7 +132,7 @@
       })
       .then(buf => {
         const rawEntries = fflate.unzipSync(new Uint8Array(buf));
-        const entries = stripCommonRootFolder(rawEntries);
+        const entries = pickGameFolderAndFlatten(rawEntries);
 
         window.Module = {
           preRun: [
