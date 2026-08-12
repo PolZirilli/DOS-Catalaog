@@ -246,3 +246,18 @@ body {
 .mb-body { padding:18px 16px; text-align:center; }
 .mb-body p { font-size:13px; color:#000; line-height:1.5; margin-top:10px; }
 .mb-body .mb-strong { font-weight:bold; display:block; margin-bottom:2px; }
+
+/* ============================================================
+   Agregar esto al final de css/style.css existente.
+   Estiliza el <canvas> que crea js/scummvm-engine.js dentro de
+   .jsdos-container (se reutiliza la misma clase contenedora que
+   ya usa js-dos, por eso no hace falta tocar más reglas).
+   ============================================================ */
+.scummvm-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  image-rendering: pixelated;
+  outline: none;
+}
