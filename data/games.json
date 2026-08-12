@@ -13,6 +13,8 @@
   },
   "games": [
     { "id": "", "name": "", "genre": "", "year": "", "bundle": ""},
+    { "id": "","name": "","genre": "","year": "","engine": "scummvm","bundle": ""},
+    
     { "id": "quake", "name": "QUAKE", "genre": "fps", "year": "1996", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/catdos/quake.jsdos"},
     { "id": "doom2", "name": "DOOM2", "genre": "fps", "year": "1994", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/doom2.jsdos"},
     { "id": "blood", "name": "BLOOD", "genre": "fps", "year": "1997", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/blood.jsdos"},
@@ -20,7 +22,6 @@
       
     { "id": "indy3", "name": "INDY3", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy3.jsdos"},
     { "id": "indy3s", "name": "INDY3S", "genre": "adv", "year": "1989", "engine": "scummvm", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy3vga.zip"},
-
     
     { "id": "indy4", "name": "ATLANTIS", "genre": "adv", "year": "1989", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy4.jsdos"},
     { "id": "monkeyega", "name": "MONKEYEGA", "genre": "adv", "year": "1990", "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/mnkyega.jsdos"},
