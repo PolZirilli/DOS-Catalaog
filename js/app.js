@@ -293,6 +293,9 @@ function launchGame(g) {
           container.textContent = 'No se pudo iniciar ScummVM: ' + err.message;
           return null;
         });
+        // En cuanto la ventana quede activa (foco de mouse/teclado), que
+        // el teclado apunte al iframe del juego, no al documento principal.
+        dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
       } else {
         container.style.color = '#f66';
         container.style.padding = '14px';
@@ -344,6 +347,11 @@ function focusWin(id) {
   if (!win) return;
   win.style.zIndex = ++zTop;
   document.querySelectorAll('.running-tab').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  // Si es una ventana de ScummVM, devolverle el foco de teclado al iframe
+  // del juego (si no, el menú Ctrl+F5 / Guardar / Opciones no recibe nada).
+  if (dosInstances[id]) {
+    dosInstances[id].then(inst => { if (inst && inst.focus) inst.focus(); });
+  }
 }
 function minimizeWin(id) {
   const win = openWins[id];
