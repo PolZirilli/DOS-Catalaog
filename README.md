@@ -1,5 +1,4 @@
-# Catálogo DOS / Win2000
-
+# Catálogo DOS
 Prototipo funcional de un catálogo de juegos DOS con estética de interface de DOS mediante Norton Commander, corriendo sobre [js-dos](https://js-dos.com) (DOSBox compilado a WebAssembly). Para uso personal, no comercial.
 
 ## Estructura
