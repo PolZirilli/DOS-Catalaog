@@ -218,7 +218,10 @@ function renderFkeys() {
   });
 }
 
-/* ---------- WINDOWS / JS-DOS ---------- */
+/* ---------- WINDOWS / MOTORES DE EMULACIÓN ---------- */
+// Un juego corre con js-dos (DOSBox/WASM) por default. Si en games.json trae
+// "engine": "scummvm", se usa el motor nativo de ScummVM (ver
+// js/scummvm-engine.js) en vez de emular la PC completa.
 function launchGame(g) {
   if (openWins[g.id]) {
     focusWin(g.id);
@@ -247,7 +250,7 @@ function launchGame(g) {
       <div class="win-screen" style="display:none;">
         <div class="panel-icon big-icon">${iconArtHTML(g)}</div>
         <div class="big-title">${g.name.toUpperCase()}</div>
-        <div class="hint">Todavía no hay un bundle .jsdos asignado a este juego. Agregalo en data/games.json (campo "bundle") o dejalo local en la carpeta games/ para que arranque acá el motor real.</div>
+        <div class="hint">Todavía no hay un bundle asignado a este juego. Agregalo en data/games.json (campo "bundle") o dejalo local en la carpeta games/ para que arranque acá el motor real.</div>
         <div style="margin-top:16px;">C:\\GAMES\\${g.id.toUpperCase()}&gt;<span class="cursor-blink"></span></div>
       </div>
     </div>
@@ -258,11 +261,12 @@ function launchGame(g) {
   const bootLines = win.querySelector('.boot-lines');
   const screen = win.querySelector('.win-screen');
   const body = win.querySelector('.win-body');
+  const isScummvm = g.engine === 'scummvm';
   const lines = [
-    'MS-DOS Emulator v1.0',
-    'Detectando controladora de sonido... Sound Blaster 16 OK',
+    isScummvm ? 'ScummVM Engine v1.0' : 'MS-DOS Emulator v1.0',
+    isScummvm ? 'Detectando motor del juego...' : 'Detectando controladora de sonido... Sound Blaster 16 OK',
     `Montando C:\\GAMES\\${g.id.toUpperCase()}...`,
-    `Cargando ${g.id.toUpperCase()}.EXE...`,
+    isScummvm ? 'Auto-detectando juego...' : `Cargando ${g.id.toUpperCase()}.EXE...`,
   ];
   lines.forEach((t, i) => {
     setTimeout(() => {
@@ -275,7 +279,26 @@ function launchGame(g) {
 
   setTimeout(() => {
     bootLines.style.display = 'none';
-    if (g.bundle) {
+    if (g.bundle && isScummvm) {
+      body.classList.add('no-pad');
+      const container = document.createElement('div');
+      container.className = 'jsdos-container';
+      body.appendChild(container);
+      if (window.ScummVMEngine) {
+        dosInstances[g.id] = window.ScummVMEngine.run(container, g).catch(err => {
+          console.error(err);
+          container.innerHTML = '';
+          container.style.color = '#f66';
+          container.style.padding = '14px';
+          container.textContent = 'No se pudo iniciar ScummVM: ' + err.message;
+          return null;
+        });
+      } else {
+        container.style.color = '#f66';
+        container.style.padding = '14px';
+        container.textContent = 'No se pudo cargar el motor de ScummVM (js/scummvm-engine.js).';
+      }
+    } else if (g.bundle) {
       body.classList.add('no-pad');
       const container = document.createElement('div');
       container.className = 'jsdos-container';
@@ -340,6 +363,9 @@ function closeWin(id) {
   if (win) win.remove();
   delete openWins[id];
   if (dosInstances[id]) {
+    // Tanto js-dos (CommandInterface) como el wrapper de ScummVM exponen
+    // una promesa que resuelve a un objeto con .exit() — mismo contrato,
+    // no hace falta bifurcar acá según el motor.
     dosInstances[id].then(ci => { if (ci && ci.exit) ci.exit(); }).catch(() => {});
     delete dosInstances[id];
   }
