@@ -6,41 +6,66 @@ completa vía DOSBox y corre el `.EXE` original), ScummVM reimplementa el
 motor del juego de forma nativa — no hay DOS de por medio, se le dan los
 archivos de datos crudos del juego y él los auto-detecta.
 
-## Por qué es distinto a agregar un juego con js-dos
+Esta versión del paquete ya está verificada contra el build real generado
+por `.github/workflows/build-scummvm.yml` (no son suposiciones genéricas de
+"así funciona Emscripten normalmente" — se inspeccionó el `scummvm.js` y
+`scummvm.html` reales que produjo tu Action).
 
-No existe un paquete npm listo tipo js-dos para ScummVM. Hay que compilarlo
-desde su código fuente con Emscripten (su propio proyecto trae un script
-oficial para esto: `dists/emscripten/build.sh`). Por eso este paquete incluye
-un workflow de GitHub Actions que hace esa compilación por vos, corriendo en
-la infraestructura de GitHub (no hace falta instalar nada localmente).
+## Cómo funciona
+
+ScummVM corre en un **iframe** apuntando a `js/vendor/scummvm/launcher.html`,
+no inyectado directo en el DOM de tu página principal. Es así por una razón
+concreta: el propio `scummvm.wasm` hace `fetch()` de rutas relativas como
+`data/gui-icons.dat`, y esas rutas se resuelven contra la URL de la página
+que lo carga — no contra la carpeta del script. Metiendo todo (launcher,
+scummvm.js/wasm, data/) en una única carpeta y cargándola como página propia
+en un iframe, esas rutas siempre caen bien sin importar cómo esté organizado
+el resto del sitio.
+
+`launcher.html` recibe el juego a lanzar por query string
+(`?bundle=<url-del-zip>`), descarga ese `.zip`, lo descomprime en el
+navegador con fflate, monta los archivos en `/game` dentro del filesystem
+virtual de ScummVM, y lo arranca directo en ese juego (sin pasar por su
+launcher gráfico) vía el argumento `--auto-detect --path=/game`.
+
+Cerrar la ventana del juego en DOSVault simplemente saca el iframe del DOM
+— eso mata la instancia completa (audio incluido) sin necesitar ninguna
+función de salida especial.
 
 ## Pipeline completo, paso a paso
 
-### 1. Compilar ScummVM a WebAssembly (una sola vez, y de nuevo si querés sumar motores)
+### 1. Compilar ScummVM a WebAssembly
 
-1. Copiá `.github/workflows/build-scummvm.yml` a tu repo `dosvault`.
-2. En GitHub, pestaña **Actions** → **Build ScummVM (WebAssembly)** → **Run workflow**.
-   Podés dejar los valores por default (motores de aventuras clásicas: SCUMM,
-   SCI, AGI, AGOS, Beneath a Steel Sky, Flight of the Amazon Queen, etc.) o
-   ajustar la lista de `engines` si te falta o sobra alguno.
-3. **Tarda mucho** — compilar ScummVM completo con Emscripten fácilmente lleva
-   45-90+ minutos en un runner gratuito. Dejalo correr en segundo plano.
-4. Cuando termine, te va a dejar un **Release** en el repo (tag
-   `scummvm-wasm-v1` por default) con un archivo `scummvm-wasm.zip` adjunto.
+Ya lo hiciste: corriste `.github/workflows/build-scummvm.yml` desde la
+pestaña Actions de tu repo y bajaste `scummvm-wasm.zip` (31MB) del Release.
 
 ### 2. Vendorizar el build en el sitio
 
-1. Descargá `scummvm-wasm.zip` del Release y descomprimilo.
-2. Copiá su contenido (`scummvm.js`, `scummvm.wasm`, `scummvm.data`, y lo que
-   más haya generado) a `js/vendor/scummvm/` en tu repo del sitio — mismo
-   patrón que ya usás con `js/vendor/js-dos/`.
-3. Copiá también `js/vendor/fflate/fflate.min.js` (ya viene armado en este
-   paquete) a esa misma ruta en tu repo.
+1. Descomprimí `scummvm-wasm.zip`. Vas a ver algo así:
+   ```
+   data/            (carpeta con .dat, .zip de temas, plugins/*.so, etc.)
+   doc/
+   scummvm.js
+   scummvm.wasm
+   scummvm.html     (no se usa — DOSVault tiene su propio launcher.html)
+   favicon.ico, logo.svg, manifest.json, scummvm-*.png  (tampoco se usan)
+   ```
+2. Copiá **`data/`**, **`scummvm.js`** y **`scummvm.wasm`** a
+   `js/vendor/scummvm/` en tu repo del sitio (creá esa carpeta si no existe).
+3. De este paquete, copiá también a esa misma carpeta:
+   - `js/vendor/scummvm/launcher.html`
+   - `js/vendor/scummvm/fflate.min.js`
+
+   Al final, `js/vendor/scummvm/` en tu repo debe tener: `data/`,
+   `scummvm.js`, `scummvm.wasm`, `launcher.html`, `fflate.min.js`. (El resto
+   de lo que trae el zip del Release — `doc/`, `scummvm.html`, los íconos,
+   `manifest.json` — no hace falta, podés no copiarlo.)
 
 ### 3. Sumar los archivos de código de este paquete
 
 Copiá al repo:
-- `js/scummvm-engine.js` (nuevo)
+- `js/scummvm-engine.js` (nuevo — reemplaza cualquier versión anterior que
+  hayas subido de un intento previo)
 - `js/app.js` (reemplaza al actual — ya tiene la rama para `engine:"scummvm"`
   integrada, el resto del archivo es idéntico a tu versión productiva 1.1)
 - `index.html` (reemplaza al actual — el único cambio real es una línea
@@ -66,36 +91,18 @@ autoexec.
 4. Agregás la entrada en `data/games.json` con `"engine": "scummvm"` — ver
    `data/games.json.example` en este paquete para el formato exacto.
 
+Motores incluidos en este build (van a auto-detectar juegos de estas
+franquicias/formatos): SCUMM (LucasArts: Monkey Island, Indy, Full Throttle
+temprano...), SCI (Sierra: King's Quest, Space Quest, Gabriel Knight...),
+AGI (Sierra clásico: King's Quest I-III, Leisure Suit Larry 1...), AGOS
+(Simon the Sorcerer), Beneath a Steel Sky, Flight of the Amazon Queen,
+Drascula, Lure of the Temptress, Gobliiins, Bud Tucker, Touché, Cruise for a
+Corpse, Broken Sword-style Cine engine, Kyrandia, Nippon Safes (Parallaction).
+
 ### 5. Probar
 
-Abrí el sitio, entrá al juego y mirá la consola del navegador. Ver la
-siguiente sección si algo no coincide.
-
-## Puntos a verificar (no pude probarlo end-to-end)
-
-No tengo forma de compilar ni correr ScummVM-WASM en este entorno de chat, así
-que `js/scummvm-engine.js` está escrito contra el comportamiento **estándar**
-de un build de Emscripten, pero hay 2-3 detalles que varían según cómo
-`build.sh` haya generado el glue code. Están marcados con comentarios `NOTA`
-en el archivo, resumidos acá:
-
-- **Cómo se pasa la configuración (`Module`)**: asumí que el script generado
-  lee un objeto `window.Module` global si ya existe antes de ejecutarse (el
-  patrón más común de Emscripten). Algunos builds en cambio exportan una
-  función factory (`createScummVM({...}).then(mod => ...)`). Si al cargar
-  `scummvm.js` no pasa nada, abrí el archivo generado y buscá cómo arranca al
-  final (o mirá el `<script>` de ejemplo dentro de `build-emscripten/*.html`
-  que trae el zip del Release — ese HTML de referencia es la fuente de verdad
-  más confiable).
-- **Acceso al filesystem virtual** (`Module.FS.mkdir` / `.writeFile`): es el
-  nombre estándar en Emscripten, pero confirmalo corriendo `Module.FS` en la
-  consola del navegador una vez que cargue.
-- **Argumentos de arranque** (`--auto-detect --path=/game --fullscreen`):
-  deberían saltar el launcher gráfico y arrancar directo el juego montado en
-  `/game`, pero confirmalo con `scummvm --help` (podés correrlo local si
-  tenés ScummVM nativo instalado — los argumentos de línea de comando son los
-  mismos que en la versión de escritorio).
-
-Si alguno de estos tres puntos no coincide, pasame el error de consola
-después de tu primer intento y lo ajustamos — es un cambio acotado a
-`js/scummvm-engine.js`, no afecta nada de js-dos ni del resto del sitio.
+Abrí el sitio, entrá al juego. `launcher.html` muestra su propio estado de
+carga (barra de progreso / texto) dentro de la ventana mientras descarga y
+monta los datos. Si algo falla, mirá la consola del navegador — los logs de
+ScummVM van prefijados, y `launcher.html` también imprime el motivo si no
+pudo bajar o montar el bundle.
