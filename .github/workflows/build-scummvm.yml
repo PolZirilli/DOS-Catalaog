@@ -1,0 +1,78 @@
+name: Build ScummVM (WebAssembly)
+
+# Build manual (workflow_dispatch): esto compila ScummVM completo con Emscripten
+# para un subconjunto de motores de aventuras gráficas y publica el resultado
+# como un GitHub Release. Es un build pesado (fácilmente 45-90+ min en un
+# runner gratuito de GitHub), por eso NO corre en cada push, solo cuando lo
+# dispares a mano desde la pestaña "Actions" del repo (botón "Run workflow").
+#
+# Este workflow vive en TU repo (dosvault), pero compila el código fuente de
+# scummvm/scummvm (no el tuyo) usando su script oficial dists/emscripten/build.sh.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scummvm_ref:
+        description: "Rama o tag de scummvm/scummvm a compilar"
+        required: true
+        default: "master"
+      engines:
+        description: "Motores a incluir (separados por coma, sin espacios)"
+        required: true
+        default: "scumm,scumm_7_8,sci,sci32,agi,agos,agos2,sky,queen,drascula,lure,gob,tucker,touche,cine,cruise,kyra,parallaction"
+      release_tag:
+        description: "Tag del Release donde se publican los artefactos"
+        required: true
+        default: "scummvm-wasm-v1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Checkout scummvm/scummvm
+        uses: actions/checkout@v4
+        with:
+          repository: scummvm/scummvm
+          ref: ${{ github.event.inputs.scummvm_ref }}
+          path: scummvm-src
+
+      - name: Instalar dependencias de build
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3 git cmake ninja-build
+
+      - name: Compilar con Emscripten
+        working-directory: scummvm-src
+        run: |
+          chmod +x dists/emscripten/build.sh
+          ./dists/emscripten/build.sh build \
+            --verbose \
+            --disable-all-engines \
+            --enable-plugins \
+            --default-dynamic \
+            --enable-engine=${{ github.event.inputs.engines }}
+
+      - name: Empaquetar artefactos
+        working-directory: scummvm-src
+        run: |
+          ls -la build-emscripten || (echo "No se encontró build-emscripten/, revisar salida del build" && exit 1)
+          cd build-emscripten
+          zip -r ../../scummvm-wasm.zip .
+
+      - name: Publicar Release con los artefactos
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: "ScummVM WASM build (${{ github.event.inputs.scummvm_ref }})"
+          body: |
+            Build automático de ScummVM para WebAssembly, generado desde
+            scummvm/scummvm@${{ github.event.inputs.scummvm_ref }}.
+            Motores incluidos: ${{ github.event.inputs.engines }}
+
+            Para usarlo en DOSVault: descargar `scummvm-wasm.zip`, descomprimirlo,
+            y copiar los archivos generados (scummvm.js, scummvm.wasm, scummvm.data,
+            etc.) dentro de `js/vendor/scummvm/` en el repo del sitio.
+          files: scummvm-wasm.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
