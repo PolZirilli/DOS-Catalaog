@@ -46,6 +46,16 @@
   IMPORTANTE: --auto-detect NO admite --recursive (ScummVM tira error si se
   usan juntos), por eso hace falta dejar los archivos del juego sueltos
   directo en la raíz de /game en vez de confiar en una búsqueda recursiva.
+
+  PLUGINS DE MOTOR: a diferencia de "data/gui-icons.dat" y otros assets
+  sueltos (que sí resuelve solo vía fetch relativo), los plugins de motor
+  (data/plugins/*.so — libscumm.so, libsci.so, etc.) los busca ScummVM
+  DIRECTO en su filesystem virtual (vía dlopen) sin ir a la red primero; si
+  no están ahí ya montados, tira "Could not find suitable engine plugin"
+  aunque el juego se haya detectado bien. Por eso acá abajo se bajan TODOS
+  los .so listados en data/plugins/index.json de antemano y se escriben en
+  el filesystem virtual en un par de rutas candidatas (no hay forma de saber
+  desde JS cuál usa el buscador interno sin decompilar el .wasm).
 -->
 <script src="fflate.min.js"></script>
 <script>
@@ -72,8 +82,6 @@
   const JUNK_DIR_NAMES = new Set(['saves', 'save', 'extras', 'extra', 'manual', 'manuals', 'docs', 'scummvm', 'dosbox']);
 
   function pickGameFolderAndFlatten(rawEntries) {
-    // 1) descartar basura de macOS (__MACOSX/, ._archivo, .DS_Store) y
-    // carpetas vacías.
     const files = {};
     Object.keys(rawEntries).forEach(path => {
       if (path.endsWith('/')) return;
@@ -82,37 +90,49 @@
       if (base.startsWith('._') || base === '.DS_Store') return;
       files[path] = rawEntries[path];
     });
-
-    // 2) agrupar por carpeta contenedora (ruta completa) y quedarse con la
-    // que tiene más archivos, ignorando nombres de carpeta conocidos que
-    // no son el juego. Esto resuelve tanto "C/Indy3/*.LFL" (con Saves/,
-    // Extras/, y hasta un ScummVM/ portable al lado) como un zip ya plano
-    // (ahí la carpeta "ganadora" va a ser la raíz "").
     const groups = {};
     Object.keys(files).forEach(path => {
       const slash = path.lastIndexOf('/');
       const dir = slash === -1 ? '' : path.slice(0, slash);
       (groups[dir] = groups[dir] || []).push(path);
     });
-
-    let bestDir = null;
-    let bestCount = -1;
+    let bestDir = null, bestCount = -1;
     Object.keys(groups).forEach(dir => {
       const lastSeg = dir.split('/').pop().toLowerCase();
       if (JUNK_DIR_NAMES.has(lastSeg)) return;
-      if (groups[dir].length > bestCount) {
-        bestCount = groups[dir].length;
-        bestDir = dir;
-      }
+      if (groups[dir].length > bestCount) { bestCount = groups[dir].length; bestDir = dir; }
     });
-    if (bestDir === null) return files; // no debería pasar, por las dudas no tocar nada
-
+    if (bestDir === null) return files;
     const prefix = bestDir === '' ? '' : bestDir + '/';
     const result = {};
-    groups[bestDir].forEach(path => {
-      result[path.slice(prefix.length)] = files[path];
-    });
+    groups[bestDir].forEach(path => { result[path.slice(prefix.length)] = files[path]; });
     return result;
+  }
+
+  function fetchBytes(url) {
+    return fetch(url).then(resp => {
+      if (!resp.ok) throw new Error('HTTP ' + resp.status + ' en ' + url);
+      return resp.arrayBuffer();
+    }).then(buf => new Uint8Array(buf));
+  }
+
+  // Baja todos los plugins de motor listados en data/plugins/index.json.
+  // Si ese índice no existe o falla, sigue sin plugins (algún engine
+  // estático podría igual andar) en vez de bloquear todo.
+  function fetchAllPlugins() {
+    return fetch('data/plugins/index.json')
+      .then(r => (r.ok ? r.json() : {}))
+      .catch(() => ({}))
+      .then(index => {
+        const names = Object.keys(index || {});
+        return Promise.all(
+          names.map(name =>
+            fetchBytes('data/plugins/' + name)
+              .then(bytes => ({ name, bytes }))
+              .catch(err => { console.warn('[scummvm] no se pudo bajar plugin', name, err); return null; })
+          )
+        ).then(results => results.filter(Boolean));
+      });
   }
 
   if (!bundleUrl) {
@@ -125,19 +145,18 @@
 
     setStatus('Descargando datos del juego…');
 
-    fetch(bundleUrl)
-      .then(resp => {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' al bajar el bundle');
-        return resp.arrayBuffer();
-      })
-      .then(buf => {
-        const rawEntries = fflate.unzipSync(new Uint8Array(buf));
+    Promise.all([
+      fetchBytes(bundleUrl).then(bytes => fflate.unzipSync(bytes)),
+      fetchAllPlugins(),
+    ])
+      .then(([rawEntries, plugins]) => {
         const entries = pickGameFolderAndFlatten(rawEntries);
 
         window.Module = {
           preRun: [
             function () {
               const FS = Module.FS;
+
               FS.mkdir('/game');
               Object.keys(entries).forEach(path => {
                 if (path.endsWith('/')) return;
@@ -148,6 +167,15 @@
                   try { FS.mkdir(dir); } catch (e) { /* ya existe */ }
                 }
                 FS.writeFile('/game/' + path, entries[path]);
+              });
+
+              // Plugins de motor: se escriben en varias rutas candidatas
+              // porque no hay forma de confirmar desde JS cuál usa
+              // internamente el buscador de dlopen de este build.
+              try { FS.mkdir('/plugins'); } catch (e) { /* ya existe */ }
+              plugins.forEach(({ name, bytes }) => {
+                try { FS.writeFile('/' + name, bytes); } catch (e) { console.warn('[scummvm] no se pudo escribir', name, 'en /', e); }
+                try { FS.writeFile('/plugins/' + name, bytes); } catch (e) { console.warn('[scummvm] no se pudo escribir', name, 'en /plugins/', e); }
               });
             },
           ],
