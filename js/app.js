@@ -237,10 +237,13 @@ function launchGame(g) {
   win.style.left = left + 'px'; win.style.top = top + 'px';
   win.style.zIndex = ++zTop;
 
+  const isScummvm = g.engine === 'scummvm';
+
   win.innerHTML = `
     <div class="titlebar">
       <div class="titlebar-title">${g.name.toUpperCase()}.EXE</div>
       <div class="win-controls">
+        ${isScummvm ? '<span class="win-btn menu" title="Menu ScummVM (Guardar/Cargar/Opciones)">[≡]</span><span class="win-btn fs" title="Pantalla completa">[⛶]</span>' : ''}
         <span class="win-btn max">[□]</span>
         <span class="win-btn close">[X]</span>
       </div>
@@ -261,7 +264,6 @@ function launchGame(g) {
   const bootLines = win.querySelector('.boot-lines');
   const screen = win.querySelector('.win-screen');
   const body = win.querySelector('.win-body');
-  const isScummvm = g.engine === 'scummvm';
   const lines = [
     isScummvm ? 'ScummVM Engine v1.0' : 'MS-DOS Emulator v1.0',
     isScummvm ? 'Detectando motor del juego...' : 'Detectando controladora de sonido... Sound Blaster 16 OK',
@@ -321,6 +323,22 @@ function launchGame(g) {
   win.addEventListener('mousedown', () => focusWin(g.id));
   win.querySelector('.win-btn.close').addEventListener('click', e => { e.stopPropagation(); closeWin(g.id); });
   win.querySelector('.win-btn.max').addEventListener('click', e => { e.stopPropagation(); win.classList.toggle('maximized'); });
+  if (isScummvm) {
+    const menuBtn = win.querySelector('.win-btn.menu');
+    const fsBtn = win.querySelector('.win-btn.fs');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.openMenu) inst.openMenu(); });
+      });
+    }
+    if (fsBtn) {
+      fsBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.requestFullscreen) inst.requestFullscreen(); });
+      });
+    }
+  }
   makeDraggable(win, win.querySelector('.titlebar'));
 
   addRunningTab(g);
