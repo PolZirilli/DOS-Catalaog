@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>ScummVM</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; height: 100%; overflow: hidden; }
+  #status {
+    position: absolute; bottom: 10px; left: 10px; right: 10px;
+    color: #6f6; font: 12px monospace; z-index: 3; white-space: pre-wrap;
+  }
+  #status.error { color: #f66; }
+  canvas.emscripten {
+    border: 0 none; background: #000;
+    position: absolute; top: 0; left: 0; margin: 0;
+    width: 100%; height: 100%; display: block; outline: none;
+  }
+</style>
+</head>
+<body>
+<div id="status">Cargando ScummVM…</div>
+<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+
+<!--
+  Este archivo va DENTRO de la misma carpeta donde vendorizás el build de la
+  GitHub Action (js/vendor/scummvm/), junto a scummvm.js, scummvm.wasm y
+  data/. Es así a propósito: el propio scummvm.wasm hace fetch() de rutas
+  relativas como "data/gui-icons.dat", y esas rutas se resuelven contra la
+  URL de ESTA página, no contra el script. Por eso DOSVault no inyecta
+  scummvm.js directo en su DOM: abre esta página en un <iframe> (ver
+  js/scummvm-engine.js), así todas las rutas relativas caen en el lugar
+  correcto sin importar en qué carpeta esté el resto del sitio.
+
+  El juego a cargar se pasa por query string: launcher.html?bundle=<url>
+  El bundle es un .zip con los archivos de datos crudos del juego (no un
+  .jsdos). Se descarga, se descomprime en el navegador con fflate y se monta
+  en /game antes de arrancar ScummVM, que se auto-lanza directo a ese juego
+  vía el argumento --path=/game (pasado por el hash de la URL, que es como
+  este build en particular lee Module["arguments"] — lo pisa si no viene
+  por ahí, así que NO alcanza con setear Module.arguments en JS).
+-->
+<script src="fflate.min.js"></script>
+<script>
+  const statusEl = document.getElementById('status');
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle('error', !!isError);
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const bundleUrl = params.get('bundle');
+
+  if (!bundleUrl) {
+    setStatus('Falta el parámetro ?bundle=<url> en la URL.', true);
+  } else {
+    // Argumentos de arranque de ScummVM: scummvm.js lee esto de
+    // window.location.hash al ejecutarse (ver nota arriba), por eso se
+    // setea ANTES de inyectar el <script src="scummvm.js">.
+    window.location.hash = encodeURI('--auto-detect --path=/game');
+
+    setStatus('Descargando datos del juego…');
+
+    fetch(bundleUrl)
+      .then(resp => {
+        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' al bajar el bundle');
+        return resp.arrayBuffer();
+      })
+      .then(buf => {
+        const entries = fflate.unzipSync(new Uint8Array(buf));
+
+        window.Module = {
+          preRun: [
+            function () {
+              const FS = Module.FS;
+              FS.mkdir('/game');
+              Object.keys(entries).forEach(path => {
+                if (path.endsWith('/')) return;
+                const parts = path.split('/');
+                let dir = '/game';
+                for (let i = 0; i < parts.length - 1; i++) {
+                  dir += '/' + parts[i];
+                  try { FS.mkdir(dir); } catch (e) { /* ya existe */ }
+                }
+                FS.writeFile('/game/' + path, entries[path]);
+              });
+            },
+          ],
+          canvas: document.getElementById('canvas'),
+          print: (...args) => console.log('[scummvm]', ...args),
+          printErr: (...args) => console.error('[scummvm]', ...args),
+          setStatus: (msg) => { if (msg) setStatus(msg); else statusEl.style.display = 'none'; },
+          totalDependencies: 0,
+          monitorRunDependencies: function (left) {
+            this.totalDependencies = Math.max(this.totalDependencies, left);
+            setStatus(left ? `Preparando... (${this.totalDependencies - left}/${this.totalDependencies})` : 'Iniciando...');
+          },
+        };
+
+        window.onerror = function () {
+          setStatus('Ocurrió un error, ver la consola del navegador.', true);
+        };
+
+        const s = document.createElement('script');
+        s.src = 'scummvm.js';
+        s.async = true;
+        document.body.appendChild(s);
+      })
+      .catch(err => {
+        console.error(err);
+        setStatus('No se pudo iniciar el juego: ' + err.message, true);
+      });
+  }
+</script>
+</body>
+</html>
