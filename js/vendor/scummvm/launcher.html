@@ -41,14 +41,23 @@
 -->
 <script src="fflate.min.js"></script>
 <script>
+// Todo envuelto en un IIFE a propósito: este <script> comparte el scope
+// global de la página con scummvm.js, que se inyecta después. scummvm.js
+// tiene código interno viejo que usa variables sin declarar (ej. "params=..."
+// sin var/let/const) — si nosotros también declarábamos algo con ese mismo
+// nombre en el scope global (aunque sea "const params"), scummvm.js terminaba
+// reasignando NUESTRA constante y tirando "Assignment to constant variable".
+// Aislando todo acá adentro evitamos pisarnos con cualquier nombre interno
+// que use scummvm.js, no solo "params".
+(function () {
   const statusEl = document.getElementById('status');
   function setStatus(msg, isError) {
     statusEl.textContent = msg;
     statusEl.classList.toggle('error', !!isError);
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const bundleUrl = params.get('bundle');
+  const dvParams = new URLSearchParams(window.location.search);
+  const bundleUrl = dvParams.get('bundle');
 
   if (!bundleUrl) {
     setStatus('Falta el parámetro ?bundle=<url> en la URL.', true);
@@ -110,6 +119,7 @@
         setStatus('No se pudo iniciar el juego: ' + err.message, true);
       });
   }
+})();
 </script>
 </body>
 </html>
