@@ -38,6 +38,9 @@
   vía el argumento --path=/game (pasado por el hash de la URL, que es como
   este build en particular lee Module["arguments"] — lo pisa si no viene
   por ahí, así que NO alcanza con setear Module.arguments en JS).
+  Se usa --recursive porque muchos zips de juego traen los archivos dentro
+  de una subcarpeta en vez de sueltos en la raíz; sin esto ScummVM solo
+  mira el primer nivel de /game y no encuentra nada.
 -->
 <script src="fflate.min.js"></script>
 <script>
@@ -65,7 +68,7 @@
     // Argumentos de arranque de ScummVM: scummvm.js lee esto de
     // window.location.hash al ejecutarse (ver nota arriba), por eso se
     // setea ANTES de inyectar el <script src="scummvm.js">.
-    window.location.hash = encodeURI('--auto-detect --path=/game');
+    window.location.hash = encodeURI('--auto-detect --recursive --path=/game');
 
     setStatus('Descargando datos del juego…');
 
