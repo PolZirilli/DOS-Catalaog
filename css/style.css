@@ -147,9 +147,10 @@ body {
 .running-tab.active { background:#00aaaa; color:#000; border-color:#fff; }
 
 #fkeys {
-  display:flex;
-  background:#000;
-  font-size: 1.15rem;
+    display: flex;
+    background: #000;
+    font-size: 2rem;
+    line-height: 0.9em;
 }
 .fkey {
   flex:1;
