@@ -62,7 +62,7 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/flightamazonq.zip"
     },
     {
-      "id": "indy3s",
+      "id": "indy3",
       "name": "INDY3",
       "genre": "avg",
       "year": "1989",
@@ -70,12 +70,12 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy3.zip"
     },
     {
-      "id": "indy4",
+      "id": "atlantis",
       "name": "ATLANTIS",
       "genre": "avg",
       "year": "1989",
       "engine": "scummvm",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy4.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/atlantis.zip"
     },
     {
       "id": "loom",
