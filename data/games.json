@@ -92,6 +92,22 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/monkey.jsdos"
     },
     {
+      "id": "monkey1",
+      "name": "MONKEY1",
+      "genre": "avg",
+      "year": "1990",
+      "engine": "scummvm",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/monkey1.zip"
+    },
+    {
+      "id": "lureoftemp",
+      "name": "LUREOFTEMP",
+      "genre": "avg",
+      "year": "1992",
+      "engine": "scummvm",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/lureoftemp.zip"
+    },
+    {
       "id": "eob",
       "name": "EYEOFB",
       "genre": "avg",
