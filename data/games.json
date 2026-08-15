@@ -54,20 +54,12 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/heretic.jsdos"
     },
     {
-      "id": "amazonqueen",
-      "name": "AMAZONQUEEN",
-      "genre": "avg",
-      "year": "1991",
-      "engine": "scummvm",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/amazonqueen.zip"
-    },
-    {
       "id": "flightaq",
       "name": "FLIGHTAQ",
       "genre": "avg",
       "year": "1991",
       "engine": "scummvm",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/flightaq.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/flightamazonq.zip"
     },
     {
       "id": "indy3s",
