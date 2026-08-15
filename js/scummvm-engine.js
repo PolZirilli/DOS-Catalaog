@@ -45,24 +45,20 @@ window.ScummVMEngine = (function () {
           iframe.remove();
         },
         // app.js llama esto cuando la ventana del juego pasa a primer
-        // plano (mousedown), para que el teclado vuelva a apuntar al
-        // iframe en vez de quedarse en el documento principal.
+        // plano (mousedown) o después de togglear pantalla completa, para
+        // que el teclado vuelva a apuntar al iframe en vez de quedarse en
+        // el documento principal.
+        //
+        // NOTA sobre pantalla completa: a propósito NO usamos la
+        // Fullscreen API real del navegador (iframe.requestFullscreen())
+        // acá. El navegador reserva la tecla ESC para salir de pantalla
+        // completa real de forma no cancelable por JS -- eso pisaba el ESC
+        // que usan los juegos para saltear cinemáticas/menús (un solo ESC
+        // hacía las dos cosas a la vez). El toggle de pantalla completa
+        // "falsa" (clase CSS .pseudo-fs sobre la ventana) vive en app.js,
+        // que es quien controla el elemento .window; acá solo devolvemos
+        // el foco al iframe después del toggle.
         focus: () => {
-          try { iframe.contentWindow.focus(); } catch (e) { /* ignorar */ }
-        },
-        // Pantalla completa pedida DIRECTO por nosotros sobre el iframe,
-        // disparada por un click real del usuario (botón en la
-        // titlebar). No depende del Alt+Enter interno de ScummVM, que en
-        // este build es poco confiable (llamada asincrónica vía Asyncify,
-        // el navegador exige que requestFullscreen() se dispare síncrono
-        // dentro del gesto del usuario — por eso Alt+Enter a veces
-        // funciona una vez y después no).
-        requestFullscreen: () => {
-          const req = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
-          if (req) {
-            const r = req.call(iframe);
-            if (r && r.catch) r.catch(err => console.warn('[scummvm] el navegador rechazó pantalla completa', err));
-          }
           try { iframe.contentWindow.focus(); } catch (e) { /* ignorar */ }
         },
         // Simula Ctrl+F5 (Global Main Menu: Guardar/Cargar/Opciones) sin

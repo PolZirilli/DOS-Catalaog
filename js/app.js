@@ -243,7 +243,7 @@ function launchGame(g) {
     <div class="titlebar">
       <div class="titlebar-title">${g.name.toUpperCase()}.EXE</div>
       <div class="win-controls">
-        ${isScummvm ? '<span class="win-btn menu" title="Menu ScummVM (Guardar/Cargar/Opciones)">[≡]</span><span class="win-btn fs" title="Pantalla completa">[⛶]</span>' : ''}
+        ${isScummvm ? '<span class="win-btn menu" title="Menu ScummVM (Guardar/Cargar/Opciones)">[≡]</span><span class="win-btn fs" title="Pantalla completa (ESC queda libre para el juego)">[⛶]</span>' : ''}
         <span class="win-btn max">[□]</span>
         <span class="win-btn close">[X]</span>
       </div>
@@ -335,7 +335,15 @@ function launchGame(g) {
     if (fsBtn) {
       fsBtn.addEventListener('click', e => {
         e.stopPropagation();
-        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.requestFullscreen) inst.requestFullscreen(); });
+        // Pantalla completa "falsa" con CSS (.pseudo-fs), no la Fullscreen
+        // API real del navegador -- así ESC no se lo come el navegador
+        // para salir, y le sigue llegando entero al juego (ver nota en
+        // js/scummvm-engine.js). El botón [⛶] queda visible arriba de
+        // todo como única forma de entrar/salir.
+        win.classList.toggle('pseudo-fs');
+        const active = win.classList.contains('pseudo-fs');
+        fsBtn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa (ESC queda libre para el juego)';
+        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
       });
     }
   }
