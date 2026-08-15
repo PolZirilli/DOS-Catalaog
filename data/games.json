@@ -100,6 +100,14 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/monkey1.zip"
     },
     {
+      "id": "monkey2",
+      "name": "MONKEY2",
+      "genre": "avg",
+      "year": "1991",
+      "engine": "scummvm",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/monkey2.zip"
+    },
+    {
       "id": "loom",
       "name": "LOOM",
       "genre": "avg",
