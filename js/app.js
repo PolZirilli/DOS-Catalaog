@@ -41,17 +41,6 @@ function fakeDate(id, year) {
   return `${pad(month)}-${pad(day)}-${yy}  ${hour}:${pad(min)}${ampm}`;
 }
 
-function initials(name) {
-  return name.replace(/[^A-Za-z0-9 ]/g, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-}
-
-// Intenta cargar icons/<id>.png|jpg; si no existe, muestra las iniciales del juego.
-function iconArtHTML(g) {
-  return `<img src="icons/${g.id}.png" alt=""
-      onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex';"
-    ><span class="icon-fallback">${initials(g.name)}</span>`;
-}
-
 function buildLeftItems() {
   LEFT_ITEMS = Object.keys(GENRES).map(id => {
     const count = GAMES.filter(g => g.genre === id).length;
@@ -192,19 +181,23 @@ function showHelp() {
 /* ---------- FKEYS ---------- */
 const FKEYS = [
   { key: 'F1', label: 'Ayuda', action: showHelp },
-  { key: 'F3', label: 'Info', action: () => {
+  {
+    key: 'F3', label: 'Info', action: () => {
       const g = RIGHT_ITEMS[state.rightIndex];
       if (state.focus === 'right' && g) {
         cmdline.innerHTML = `${g.name} — ${GENRES[g.genre] || g.genre} — ${g.year}<span class="cursor-blink"></span>`;
         setTimeout(updateCmdline, 2500);
       }
-  } },
+    }
+  },
   { key: 'F4', label: 'Ejecutar', action: activateSelection },
   { key: 'F5', label: 'Refrescar', action: render },
-  { key: 'F10', label: 'Cerrar activa', action: () => {
+  {
+    key: 'F10', label: 'Cerrar activa', action: () => {
       const ids = Object.keys(openWins);
       if (ids.length) closeWin(ids[ids.length - 1]);
-  } },
+    }
+  },
 ];
 
 function renderFkeys() {
@@ -251,7 +244,6 @@ function launchGame(g) {
     <div class="win-body">
       <div class="boot-lines"></div>
       <div class="win-screen" style="display:none;">
-        <div class="panel-icon big-icon">${iconArtHTML(g)}</div>
         <div class="big-title">${g.name.toUpperCase()}</div>
         <div class="hint">Todavía no hay un bundle asignado a este juego. Agregalo en data/games.json (campo "bundle") o dejalo local en la carpeta games/ para que arranque acá el motor real.</div>
         <div style="margin-top:16px;">C:\\GAMES\\${g.id.toUpperCase()}&gt;<span class="cursor-blink"></span></div>
@@ -400,7 +392,7 @@ function closeWin(id) {
     // Tanto js-dos (CommandInterface) como el wrapper de ScummVM exponen
     // una promesa que resuelve a un objeto con .exit() — mismo contrato,
     // no hace falta bifurcar acá según el motor.
-    dosInstances[id].then(ci => { if (ci && ci.exit) ci.exit(); }).catch(() => {});
+    dosInstances[id].then(ci => { if (ci && ci.exit) ci.exit(); }).catch(() => { });
     delete dosInstances[id];
   }
   const tab = runningEl ? runningEl.querySelector(`.running-tab[data-id="${id}"]`) : null;
