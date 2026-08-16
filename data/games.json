@@ -167,7 +167,7 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ckeen2.jsdos"
     },
     {
-      "id": "commanderkeen4",
+      "id": "ckeen4",
       "name": "CKEEN4",
       "genre": "platformer",
       "year": "1994",
@@ -209,13 +209,6 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/jazz.jsdos"
     },
     {
-      "id": "commanderkeen5",
-      "name": "COMMKEEN5",
-      "genre": "platformer",
-      "year": "1995",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ckeen5.jsdos"
-    },
-    {
       "id": "warcraft",
       "name": "WARCRAFT",
       "genre": "rts",
@@ -242,13 +235,6 @@
       "genre": "race",
       "year": "1989",
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/gpcircuit.jsdos"
-    },
-    {
-      "id": "stunts",
-      "name": "STUNTS",
-      "genre": "race",
-      "year": "1990",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/stunts.jsdos"
     },
     {
       "id": "deathrally",
