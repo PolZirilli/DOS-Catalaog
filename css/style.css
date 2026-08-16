@@ -1,187 +1,306 @@
-* { box-sizing: border-box; margin:0; padding:0; }
-html,body { height:100%; overflow:hidden; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: "VT323", monospace !important;
   font-weight: 400;
   font-style: normal;
   background: #0000aa;
-  height:100vh; width:100vw; position:relative; user-select:none;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  user-select: none;
   cursor: default;
   color: #000000;
 }
 
 /* frame helper: doble linea clasica de TUI DOS, hecha con box-shadow (sin gradientes) */
 .nc-frame {
-    border: 2px solid #55fffe;
-    box-shadow: inset 0 0 0 2px #0000aa, inset 0 0 0 4px #55fffe;
+  border: 2px solid #55fffe;
+  box-shadow: inset 0 0 0 2px #0000aa, inset 0 0 0 4px #55fffe;
 }
+
 .head-frame {
-    background: #00aaaa;
+  background: #00aaaa;
 }
+
 .head-frame {
-    font-size: 2rem;
-    padding: 0px 10px;
-    color: #0000aa;
+  font-size: 2rem;
+  padding: 0px 10px;
+  color: #0000aa;
 }
 
 /* ---------- SHELL ---------- */
 #shell {
-  position:absolute; inset:0;
-  display:flex; flex-direction:column;
-  padding:10px;
-  gap:6px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 6px;
 }
 
 #panels {
-  flex:1;
-  display:flex;
-  gap:10px;
-  min-height:0;
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  min-height: 0;
 }
 
 .panel {
-  flex:1;
-  display:flex; flex-direction:column;
-  min-width:0;
-  background:#0000aa;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #0000aa;
 }
-.panel.nc-frame { padding:2px 6px 4px; }
+
+.panel.nc-frame {
+  padding: 4px 8px 4px;
+}
 
 .panel-header {
-  color:#ffff66; font-weight:bold;
-  padding:2px 2px 4px;
-  border-bottom:1px solid #55aaff;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  color: #ffff66;
+  font-weight: bold;
+  padding: 2px 2px 4px;
+  border-bottom: 1px solid #55aaff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 1.5rem;
 }
 
 .panel-cols {
-  display:flex;
-  color:#7ab0ff;
-  padding:3px 2px;
-  font-size:13px;
-  border-bottom:1px solid #55aaff;
+  display: flex;
+  color: #7ab0ff;
+  padding: 3px 2px;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #55aaff;
 }
-.panel-cols .col-name { flex:1; text-transform: uppercase; }
-.panel-cols .col-extra { width:64px; text-align:right; }
+
+.panel-cols .col-name {
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.panel-cols .col-extra {
+  width: 64px;
+  text-align: right;
+}
 
 .panel-list {
-  flex:1;
-  overflow-y:auto;
-  padding-top:2px;
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 2px;
 }
 
 .panel-row {
-  display:flex;
-  align-items:center;
-  padding:2px 2px;
-  font-size:1.4rem;
-  cursor:pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px 2px;
+  font-size: 1.4rem;
+  cursor: pointer;
   white-space: normal;
 }
-.panel-row .col-name { flex:1; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:6px; }
-.panel-row .col-extra { width:64px; text-align:right; color:#7ab0ff; }
-.panel-row.is-dir .col-name { color:#55ffff; font-weight:bold; }
-.panel-row.is-file .col-name { color:#55ffff; }
-.panel-row.selected {
-  background:#00aaaa;
-  color:#015757;
+
+.panel-row .col-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.panel-row .col-extra {
+  width: 64px;
+  text-align: right;
+  color: #7ab0ff;
+}
+
+.panel-row.is-dir .col-name {
+  color: #55ffff;
+  font-weight: bold;
+}
+
+.panel-row.is-file .col-name {
+  color: #55ffff;
+}
+
+.panel-row.selected {
+  background: #00aaaa;
+  color: #015757;
+}
+
 .panel-row.selected .col-name,
-.panel-row.selected .col-extra { color:#000; }
+.panel-row.selected .col-extra {
+  color: #000;
+}
 
 .panel-icon {
-  position:relative;
-  width:20px; height:20px; flex-shrink:0;
-  border-radius:2px;
-  display:flex; align-items:center; justify-content:center;
-  overflow:hidden;
-  font-size:10px;
-  background:#000080;
-  border:1px solid rgba(255,255,255,0.4);
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 10px;
+  background: #000080;
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
-.panel-icon img { width:100%; height:100%; object-fit:cover; image-rendering:pixelated; }
+
+.panel-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
 .icon-fallback {
-  display:none; width:100%; height:100%;
-  align-items:center; justify-content:center;
-  color:#fff; font-weight:bold; font-size:inherit;
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: inherit;
 }
 
 /* barra de estado por panel: item seleccionado + fecha/hora, como en NC real */
 .panel-status {
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  background:#00aaaa;
-  color:#000;
-  font-size:1rem;
-  padding:2px 6px;
-  margin-top:2px;
-  white-space:nowrap;
-  overflow:hidden;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  background: #00aaaa;
+  color: #000;
+  font-size: 1rem;
+  padding: 2px 6px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
 }
-.panel-status .st-name { overflow:hidden; text-overflow:ellipsis; }
-.panel-status .st-date { flex-shrink:0; }
+
+.panel-status .st-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-status .st-date {
+  flex-shrink: 0;
+}
 
 /* ---------- CMDLINE + RUNNING + FKEYS ---------- */
 #cmdline {
-  color:#fff;
+  color: #fff;
   font-size: 1.4rem;
-  padding:2px 4px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  padding: 2px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-#cmdline .cursor-blink { display:inline-block; width:8px; height:14px; background:#fff; animation: blink 1s steps(1) infinite; vertical-align:middle; margin-left:2px; }
-@keyframes blink { 50% { opacity:0; } }
+
+#cmdline .cursor-blink {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: #fff;
+  animation: blink 1s steps(1) infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
 
 #running {
-  display:flex; gap:6px; flex-wrap:wrap;
-  min-height:22px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 22px;
 }
+
 .running-tab {
-  background:#000; color:#55ffff;
-  border:1px solid #7ab0ff;
-  padding:2px 8px;
-  font-size:12px;
-  cursor:pointer;
+  background: #000;
+  color: #55ffff;
+  border: 1px solid #7ab0ff;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
 }
-.running-tab.active { background:#00aaaa; color:#000; border-color:#fff; }
+
+.running-tab.active {
+  background: #00aaaa;
+  color: #000;
+  border-color: #fff;
+}
 
 #fkeys {
-  display:flex;
-  background:#000;
-  font-size: 1.15rem;
+  display: flex;
+  background: #000;
+  font-size: 2rem;
+  line-height: 1.9rem;
 }
+
 .fkey {
-  flex:1;
-  display:flex;
-  align-items:center;
-  white-space:nowrap;
-  overflow:hidden;
-  padding:3px 0;
-  cursor:pointer;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0px;
+  cursor: pointer;
 }
+
 .fkey .num {
-  color:#c0c0c0;
-  background:transparent;
-  padding:0 4px 0 2px;
-  font-weight:bold;
+  color: #c0c0c0;
+  background: transparent;
+  padding: 0 4px 0 2px;
+  font-weight: bold;
 }
+
 .fkey .label {
-  background:#00aaaa;
-  color:#000;
-  padding:0 4px;
-  flex:1;
+  background: #00aaaa;
+  color: #000;
+  padding: 0 4px;
+  flex: 1;
 }
 
 /* ---------- WINDOW (juego corriendo) ---------- */
 .window {
-  position:absolute;
-  min-width:340px; min-height:240px;
-  background:#0000aa;
-  display:flex; flex-direction:column;
-  z-index:100;
+  position: absolute;
+  min-width: 340px;
+  min-height: 240px;
+  background: #0000aa;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
 }
-.window.maximized { top:0 !important; left:0 !important; right:0; bottom:100px; width:auto !important; height:auto !important; }
+
+.window.maximized {
+  top: 0 !important;
+  left: 0 !important;
+  right: 0;
+  bottom: 100px;
+  width: auto !important;
+  height: auto !important;
+}
+
 /* Pantalla completa "falsa" con CSS en vez de la Fullscreen API real del
    navegador. El navegador reserva ESC para salir de pantalla completa real
    de forma NO cancelable por JS (asi lo exige el estandar) -- eso choca
@@ -192,76 +311,173 @@ body {
    intercepta ESC -- le llega derecho al juego, y para salir se usa el
    boton [⛶] de la titlebar (que queda visible arriba de todo). */
 .window.pseudo-fs {
-  position:fixed !important;
-  top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;
-  width:auto !important; height:auto !important;
-  min-width:0; min-height:0;
-  z-index:99998;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0;
+  min-height: 0;
+  z-index: 99998;
 }
+
 .titlebar {
-    height: 24px;
-    flex-shrink: 0;
-    background: #9E9E9E;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0px 4px 0 6px;
-    cursor: move;
-    color: #000;
-    font-size: 1rem;
-    font-weight: bold;
+  height: 24px;
+  flex-shrink: 0;
+  background: #9E9E9E;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0px 4px 0 6px;
+  cursor: move;
+  color: #000;
+  font-size: 1rem;
+  font-weight: bold;
 }
-.titlebar-title { display:flex; align-items:center; gap:6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.win-controls { display:flex; gap:6px; font-size:12px; }
+
+.titlebar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.win-controls {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+}
+
 .win-btn {
-  color:#000;
-  cursor:pointer;
-  font-weight:bold;
+  color: #000;
+  cursor: pointer;
+  font-weight: bold;
 }
-.win-btn:hover { color:#fff; }
+
+.win-btn:hover {
+  color: #fff;
+}
+
 .win-body {
-  flex:1; background:#000; color:#01aaaa;
+  flex: 1;
+  background: #000;
+  color: #01aaaa;
   font-family: 'Perfect DOS VGA 437', Consolas, 'Courier New', monospace;
-  font-size:13px; padding:14px;
-  overflow:auto;
-  display:flex; flex-direction:column;
+  font-size: 13px;
+  padding: 14px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
-.win-body.no-pad { padding:0; }
-.jsdos-container { width:100%; height:100%; flex:1; }
-.boot-line { margin-bottom:3px; opacity:0; animation: fadeIn 0.15s forwards; }
-@keyframes fadeIn { to { opacity:1; } }
+
+.win-body.no-pad {
+  padding: 0;
+}
+
+.jsdos-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.boot-line {
+  margin-bottom: 3px;
+  opacity: 0;
+  animation: fadeIn 0.15s forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
 .win-screen {
-  margin-top:auto; margin-bottom:auto;
-  text-align:center;
+  margin-top: auto;
+  margin-bottom: auto;
+  text-align: center;
 }
-.win-screen .big-icon { width:64px; height:64px; font-size:26px; margin:0 auto; border-radius:2px; }
-.win-screen .big-title { font-size:20px; color:#fff; margin-top:10px; letter-spacing:1px; }
-.win-screen .hint { font-size:11px; color:#6f6; margin-top:14px; max-width:380px; margin-left:auto; margin-right:auto; }
+
+.win-screen .big-icon {
+  width: 64px;
+  height: 64px;
+  font-size: 26px;
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+.win-screen .big-title {
+  font-size: 20px;
+  color: #fff;
+  margin-top: 10px;
+  letter-spacing: 1px;
+}
+
+.win-screen .hint {
+  font-size: 11px;
+  color: #6f6;
+  margin-top: 14px;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* ---------- MOBILE BLOCK (estilo dialogo NC) ---------- */
 #mobileBlock {
-  display:none;
-  position:fixed; inset:0;
-  background: rgba(0,0,0,0.65);
-  z-index:99999;
-  align-items:center; justify-content:center;
-  padding:20px;
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
-#mobileBlock.show { display:flex; }
+
+#mobileBlock.show {
+  display: flex;
+}
+
 .mb-dialog {
-  width:100%; max-width:340px;
-  background:#00aaaa;
-  color:#000;
+  width: 100%;
+  max-width: 340px;
+  background: #00aaaa;
+  color: #000;
 }
+
 .mb-titlebar {
-  height:24px; background:#0000aa;
-  color:#fff; font-size:13px; font-weight:bold;
-  display:flex; align-items:center; justify-content:center;
-  border-bottom:2px solid #fff;
+  height: 24px;
+  background: #0000aa;
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #fff;
 }
-.mb-body { padding:18px 16px; text-align:center; }
-.mb-body p { font-size:13px; color:#000; line-height:1.5; margin-top:10px; }
-.mb-body .mb-strong { font-weight:bold; display:block; margin-bottom:2px; }
+
+.mb-body {
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.mb-body p {
+  font-size: 13px;
+  color: #000;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.mb-body .mb-strong {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 2px;
+}
 
 /* ============================================================
    Agregar esto al final de css/style.css existente.
