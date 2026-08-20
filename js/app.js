@@ -26,19 +26,95 @@ const panelRightStatus = document.getElementById('panelRightStatus');
 const cmdline = document.getElementById('cmdline');
 const runningEl = document.getElementById('running');
 const fkeysEl = document.getElementById('fkeys');
+// Pueden no existir si index.html quedó desactualizado respecto a este
+// archivo (ej. deploy parcial) -- todo lo que los use más abajo chequea
+// null primero, así una falta de sincronía nunca tira abajo el resto del
+// script (que es justo lo que pasó: F3 no abría nada y las columnas
+// quedaban vacías porque este app.js estaba desactualizado en el server).
+const infoModalEl = document.getElementById('infoModal');
+const infoModalBody = document.getElementById('infoModalBody');
+const infoModalCloseBtn = document.getElementById('infoModalClose');
 
-// Genera una fecha/hora ficticia pero estable para un id (no tenemos fecha real de archivo).
-function fakeDate(id, year) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  const month = (h % 12) + 1;
-  const day = (h % 28) + 1;
-  const hour = (h % 12) + 1;
-  const min = (h * 7) % 60;
-  const ampm = h % 2 === 0 ? 'a' : 'p';
-  const yy = String(year).slice(-2);
-  const pad = n => String(n).padStart(2, '0');
-  return `${pad(month)}-${pad(day)}-${yy}  ${hour}:${pad(min)}${ampm}`;
+// Repo público de GitHub de donde sale la fecha real del último cambio a
+// data/games.json (columna Date/Time del panel izquierdo). Si el repo
+// cambia de dueño/nombre, actualizar acá.
+const GITHUB_REPO = 'PolZirilli/dosvault';
+
+const pad2 = n => String(n).padStart(2, '0');
+
+// Convierte una fecha real (Date o string ISO) al formato "MM-DD-YY" /
+// "H:MMa" que ya usa el resto de la UI estilo Norton Commander.
+function toDosDateTime(input) {
+  const d = input instanceof Date ? input : new Date(input);
+  if (isNaN(d.getTime())) return null;
+  const h24 = d.getHours();
+  const h12 = ((h24 + 11) % 12) + 1;
+  const ampm = h24 < 12 ? 'a' : 'p';
+  return {
+    date: `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}-${String(d.getFullYear()).slice(-2)}`,
+    time: `${h12}:${pad2(d.getMinutes())}${ampm}`,
+  };
+}
+
+// ---- Fecha real del último commit que tocó data/games.json (columna
+// Date/Time del panel izquierdo -- es la misma para todas las categorías,
+// porque todas dependen del mismo archivo). Se pide una sola vez a la API
+// pública de GitHub (sin API key, con CORS habilitado) y se cachea.
+let gamesJsonDateTimePromise = null;
+function fetchGamesJsonDateTime() {
+  if (!gamesJsonDateTimePromise) {
+    gamesJsonDateTimePromise = fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/commits?path=data/games.json&page=1&per_page=1`
+    )
+      .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(commits => {
+        const iso = commits && commits[0] && commits[0].commit && commits[0].commit.author && commits[0].commit.author.date;
+        const dt = iso && toDosDateTime(iso);
+        if (!dt) throw new Error('respuesta sin fecha de commit');
+        return dt;
+      })
+      .catch(err => {
+        console.error('No se pudo obtener la fecha real de data/games.json desde GitHub:', err);
+        return null; // el llamador muestra "N/D" si esto es null
+      });
+  }
+  return gamesJsonDateTimePromise;
+}
+
+// ---- Tamaño y fecha reales del bundle de cada juego (columnas Size/Date/
+// Time del panel derecho). Se leen con un HEAD al propio archivo del
+// bundle -- Content-Length y Last-Modified son headers "CORS-safelisted",
+// así que se pueden leer aunque el bucket no exponga headers custom,
+// siempre que el bucket permita el origen del sitio en su política CORS.
+const BUNDLE_INFO_CACHE = {};
+function fetchBundleInfo(g) {
+  if (!g.bundle) return Promise.resolve(null);
+  if (!(g.id in BUNDLE_INFO_CACHE)) {
+    BUNDLE_INFO_CACHE[g.id] = fetch(g.bundle, { method: 'HEAD' })
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const len = res.headers.get('content-length');
+        const lastMod = res.headers.get('last-modified');
+        return {
+          size: len != null ? parseInt(len, 10) : null,
+          dateTime: lastMod ? toDosDateTime(new Date(lastMod)) : null,
+        };
+      })
+      .catch(err => {
+        console.error(`No se pudo leer tamaño/fecha real de ${g.bundle}:`, err);
+        return null;
+      });
+  }
+  return BUNDLE_INFO_CACHE[g.id];
+}
+
+// Nombre estilo "8.3" de DOS: mayúsculas, máximo `max` caracteres. Si es más
+// largo, trunca y agrega "~1" como hace Windows/DOS al generar un nombre
+// corto a partir de uno largo (ej. "DANGEROUSDAVE" -> "DANGER~1").
+function toDosName(name, max = 7) {
+  const upper = String(name).toUpperCase();
+  if (upper.length <= max) return upper;
+  return upper.slice(0, Math.max(1, max - 2)) + '~1';
 }
 
 function buildLeftItems() {
@@ -53,7 +129,14 @@ function renderLeftPanel() {
   LEFT_ITEMS.forEach((item, i) => {
     const row = document.createElement('div');
     row.className = 'panel-row is-dir' + (state.focus === 'left' && i === state.leftIndex ? ' selected' : '');
-    row.innerHTML = `<div class="col-name">${item.label.toUpperCase()}\\</div><div class="col-extra">${item.count}</div>`;
+    // Los géneros son "carpetas": Size va como SUB-DIR (no tienen tamaño de
+    // archivo propio). Date/Time arrancan en "..." y se completan solas
+    // abajo con la fecha real del último commit a data/games.json.
+    row.innerHTML = `
+      <div class="col-name">${item.label.toUpperCase()}\\</div>
+      <div class="col-size">SUB-DIR</div>
+      <div class="col-date">...</div>
+      <div class="col-time">...</div>`;
     row.addEventListener('click', () => {
       state.focus = 'left';
       state.leftIndex = i;
@@ -65,6 +148,14 @@ function renderLeftPanel() {
       render();
     });
     panelLeftList.appendChild(row);
+  });
+
+  // Una sola consulta a GitHub (cacheada) alcanza para las 6-9 filas: todas
+  // dependen del mismo archivo data/games.json.
+  fetchGamesJsonDateTime().then(dt => {
+    panelLeftList.querySelectorAll('.col-date').forEach(el => { el.textContent = dt ? dt.date : 'N/D'; });
+    panelLeftList.querySelectorAll('.col-time').forEach(el => { el.textContent = dt ? dt.time : 'N/D'; });
+    updateStatusBars();
   });
 }
 
@@ -81,11 +172,18 @@ function renderRightPanel() {
   RIGHT_ITEMS.forEach((g, i) => {
     const row = document.createElement('div');
     row.className = 'panel-row is-file' + (state.focus === 'right' && i === state.rightIndex ? ' selected' : '');
+    // Nombre siempre en mayúsculas y truncado estilo 8.3 de DOS (máx. 7
+    // caracteres + "~1" si no entra) -- el título real completo queda
+    // disponible en el tooltip (title=) y en el popup de info (F3).
+    const dosName = toDosName(g.name, 7);
+    row.title = g.title || g.name;
     row.innerHTML = `
       <div class="col-name">
-        <span>${g.name}<span style="opacity:.6">.EXE</span></span>
+        <span>${dosName}<span style="opacity:.6">.EXE</span></span>
       </div>
-      <div class="col-extra">${g.year}</div>`;
+      <div class="col-size">...</div>
+      <div class="col-date">...</div>
+      <div class="col-time">...</div>`;
     row.addEventListener('click', () => {
       state.focus = 'right';
       state.rightIndex = i;
@@ -93,6 +191,21 @@ function renderRightPanel() {
     });
     row.addEventListener('dblclick', () => launchGame(g));
     panelRightList.appendChild(row);
+
+    // Tamaño y fecha reales del bundle -- llegan async (HEAD request), se
+    // completan en el lugar sin re-renderizar todo el panel. Si para cuando
+    // responde ya se navegó a otra categoría, la fila ya no está en el DOM
+    // y no se toca nada (evita pisar datos de otro juego).
+    fetchBundleInfo(g).then(info => {
+      if (!row.isConnected) return;
+      const sizeEl = row.querySelector('.col-size');
+      const dateEl = row.querySelector('.col-date');
+      const timeEl = row.querySelector('.col-time');
+      sizeEl.textContent = info && info.size != null ? String(info.size) : 'N/D';
+      dateEl.textContent = info && info.dateTime ? info.dateTime.date : 'N/D';
+      timeEl.textContent = info && info.dateTime ? info.dateTime.time : 'N/D';
+      if (RIGHT_ITEMS[state.rightIndex] === g) updateStatusBars();
+    });
   });
 }
 
@@ -110,13 +223,31 @@ function updateCmdline() {
 function updateStatusBars() {
   const leftItem = LEFT_ITEMS[state.leftIndex];
   if (leftItem) {
-    panelLeftStatus.innerHTML = `<span class="st-name">${leftItem.label.toUpperCase()}\\ &lt;DIR&gt;</span><span class="st-date">${fakeDate(leftItem.id, 1994)}</span>`;
+    // Reusa lo que ya haya en caché (misma fecha real de data/games.json
+    // que usan las columnas); si todavía no llegó, no dispara otro fetch,
+    // solo muestra "..." hasta que renderLeftPanel la complete.
+    const cached = gamesJsonDateTimePromise;
+    panelLeftStatus.innerHTML = `<span class="st-name">${leftItem.label.toUpperCase()}\\ &lt;DIR&gt;</span><span class="st-date">...</span>`;
+    if (cached) {
+      cached.then(dt => {
+        const el = panelLeftStatus.querySelector('.st-date');
+        if (el) el.textContent = dt ? `${dt.date}  ${dt.time}` : 'N/D';
+      });
+    }
   } else {
     panelLeftStatus.innerHTML = '';
   }
   const rightItem = RIGHT_ITEMS[state.rightIndex];
   if (rightItem) {
-    panelRightStatus.innerHTML = `<span class="st-name">${rightItem.name.toUpperCase()}.EXE</span><span class="st-date">${fakeDate(rightItem.id, rightItem.year)}</span>`;
+    panelRightStatus.innerHTML = `<span class="st-name">${rightItem.name.toUpperCase()}.EXE</span><span class="st-date">...</span>`;
+    const cached = BUNDLE_INFO_CACHE[rightItem.id];
+    if (cached) {
+      cached.then(info => {
+        if (RIGHT_ITEMS[state.rightIndex] !== rightItem) return;
+        const el = panelRightStatus.querySelector('.st-date');
+        if (el) el.textContent = info && info.dateTime ? `${info.dateTime.date}  ${info.dateTime.time}` : 'N/D';
+      });
+    }
   } else {
     panelRightStatus.innerHTML = '';
   }
@@ -161,6 +292,13 @@ function activateSelection() {
 
 document.addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  // Con el popup de info (F3) abierto, Escape lo cierra y el resto de los
+  // atajos de navegación quedan bloqueados para no mover la selección de
+  // atrás sin que se vea.
+  if (infoModalEl && infoModalEl.classList.contains('show')) {
+    if (e.key === 'Escape') { e.preventDefault(); closeInfoModal(); }
+    return;
+  }
   switch (e.key) {
     case 'ArrowUp': e.preventDefault(); moveSelection(-1); break;
     case 'ArrowDown': e.preventDefault(); moveSelection(1); break;
@@ -169,6 +307,7 @@ document.addEventListener('keydown', e => {
     case 'ArrowRight': e.preventDefault(); switchFocus(); break;
     case 'Enter': e.preventDefault(); activateSelection(); break;
     case 'F1': e.preventDefault(); showHelp(); break;
+    case 'F3': e.preventDefault(); openInfoModalForSelection(); break;
     case 'F5': e.preventDefault(); render(); break;
   }
 });
@@ -181,15 +320,7 @@ function showHelp() {
 /* ---------- FKEYS ---------- */
 const FKEYS = [
   { key: 'F1', label: 'Ayuda', action: showHelp },
-  {
-    key: 'F3', label: 'Info', action: () => {
-      const g = RIGHT_ITEMS[state.rightIndex];
-      if (state.focus === 'right' && g) {
-        cmdline.innerHTML = `${g.name} — ${GENRES[g.genre] || g.genre} — ${g.year}<span class="cursor-blink"></span>`;
-        setTimeout(updateCmdline, 2500);
-      }
-    }
-  },
+  { key: 'F3', label: 'Info', action: () => openInfoModalForSelection() },
   { key: 'F4', label: 'Ejecutar', action: activateSelection },
   { key: 'F5', label: 'Refrescar', action: render },
   {
@@ -210,6 +341,115 @@ function renderFkeys() {
     fkeysEl.appendChild(el);
   });
 }
+
+/* ---------- POPUP DE INFO (F3): Wikipedia + Wikidata ---------- */
+// Título, sinopsis e imagen salen de la API pública de Wikipedia
+// (action=query, sin API key, con &origin=* para que funcione con fetch()
+// desde cualquier dominio). La distribuidora sale de Wikidata (propiedad
+// P123 "publisher") a partir del mismo artículo. Se busca primero en
+// Wikipedia en español y, si no hay resultado, en inglés (muchos juegos DOS
+// viejos tienen mejor cobertura ahí). Resultado en caché por juego para no
+// repetir la búsqueda cada vez que se abre el popup.
+const WIKI_CACHE = {};
+
+async function wikiFetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchWikidataPublisher(wikidataId, lang) {
+  try {
+    const claimsUrl = `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${wikidataId}&property=P123&format=json&origin=*`;
+    const claims = (await wikiFetchJson(claimsUrl)).claims;
+    const targetId = claims && claims.P123 && claims.P123[0] &&
+      claims.P123[0].mainsnak && claims.P123[0].mainsnak.datavalue &&
+      claims.P123[0].mainsnak.datavalue.value && claims.P123[0].mainsnak.datavalue.value.id;
+    if (!targetId) return null;
+    const labelUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${targetId}&props=labels&languages=${lang}|en&format=json&origin=*`;
+    const labels = (await wikiFetchJson(labelUrl)).entities[targetId].labels;
+    return (labels[lang] && labels[lang].value) || (labels.en && labels.en.value) || null;
+  } catch (err) {
+    console.error('No se pudo obtener la distribuidora desde Wikidata:', err);
+    return null;
+  }
+}
+
+async function fetchWikiInfo(query) {
+  for (const lang of ['es', 'en']) {
+    try {
+      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' video game')}&srlimit=1&format=json&origin=*`;
+      const search = (await wikiFetchJson(searchUrl)).query.search;
+      if (!search || !search.length) continue;
+      const pageId = search[0].pageid;
+
+      const sumUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&pageids=${pageId}&prop=extracts%7Cpageimages%7Cpageprops&exintro=1&explaintext=1&piprop=original&format=json&origin=*`;
+      const page = (await wikiFetchJson(sumUrl)).query.pages[pageId];
+      if (!page) continue;
+
+      const wikidataId = page.pageprops && page.pageprops.wikibase_item;
+      const publisher = wikidataId ? await fetchWikidataPublisher(wikidataId, lang) : null;
+
+      return {
+        title: page.title,
+        extract: (page.extract || '').trim(),
+        image: page.original ? page.original.source : null,
+        publisher,
+        sourceUrl: `https://${lang}.wikipedia.org/?curid=${pageId}`,
+      };
+    } catch (err) {
+      console.error(`Búsqueda en Wikipedia (${lang}) falló:`, err);
+    }
+  }
+  return null;
+}
+
+function openInfoModalForSelection() {
+  const g = RIGHT_ITEMS[state.rightIndex];
+  if (state.focus === 'right' && g) openInfoModal(g);
+}
+
+async function openInfoModal(g) {
+  if (!g || !infoModalEl || !infoModalBody) return;
+  const displayTitle = g.title || g.name;
+  infoModalBody.innerHTML = `<div class="info-loading">Buscando información de ${displayTitle}...<span class="cursor-blink"></span></div>`;
+  infoModalEl.classList.add('show');
+
+  if (!(g.id in WIKI_CACHE)) {
+    WIKI_CACHE[g.id] = await fetchWikiInfo(g.title || g.name);
+  }
+  // Por si se cerró el popup mientras la búsqueda seguía en vuelo.
+  if (infoModalEl.classList.contains('show')) renderInfoModal(g, WIKI_CACHE[g.id]);
+}
+
+function renderInfoModal(g, data) {
+  if (!infoModalBody) return;
+  const titleText = (data && data.title) || g.title || g.name;
+  const publisher = (data && data.publisher) || 'Desconocida';
+  const synopsis = (data && data.extract) ? data.extract : 'No se encontró sinopsis para este juego en Wikipedia.';
+  const image = data && data.image;
+
+  infoModalBody.innerHTML = `
+    <div class="info-cols">
+      ${image
+      ? `<img class="info-image" src="${image}" alt="${titleText}">`
+      : `<div class="info-image info-image-empty">Sin imagen<br>disponible</div>`}
+      <div class="info-text">
+        <div class="info-title">${titleText}</div>
+        <div class="info-meta"><b>Año:</b> ${g.year} &nbsp;&nbsp; <b>Distribuidora:</b> ${publisher}</div>
+        <div class="info-synopsis">${synopsis}</div>
+        ${data && data.sourceUrl ? `<a class="info-source" href="${data.sourceUrl}" target="_blank" rel="noopener">Fuente: Wikipedia</a>` : ''}
+      </div>
+    </div>`;
+}
+
+function closeInfoModal() {
+  if (infoModalEl) infoModalEl.classList.remove('show');
+}
+
+if (infoModalCloseBtn) infoModalCloseBtn.addEventListener('click', closeInfoModal);
+// Click en el fondo oscuro (fuera del diálogo) también cierra.
+if (infoModalEl) infoModalEl.addEventListener('click', e => { if (e.target === infoModalEl) closeInfoModal(); });
 
 /* ---------- WINDOWS / MOTORES DE EMULACIÓN ---------- */
 // Un juego corre con js-dos (DOSBox/WASM) por default. Si en games.json trae
