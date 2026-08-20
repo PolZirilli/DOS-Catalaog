@@ -19,6 +19,13 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/quake.jsdos"
     },
     {
+      "id": "doom",
+      "name": "DOOM",
+      "genre": "fps",
+      "year": "1991",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/doom.jsdos"
+    },
+    {
       "id": "doom2",
       "name": "DOOM2",
       "genre": "fps",
@@ -31,6 +38,13 @@
       "genre": "fps",
       "year": "1997",
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/blood.jsdos"
+    },
+    {
+      "id": "hexen",
+      "name": "HEXEN",
+      "genre": "fps",
+      "year": "1997",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/hexen.jsdos"
     },
     {
       "id": "wolf3d",
@@ -223,6 +237,13 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/battlechess.jsdos"
     },
     {
+      "id": "deathrally",
+      "name": "DEATHRALLY",
+      "genre": "race",
+      "year": "1996",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/deathrally.jsdos"
+    },
+    {
       "id": "gpcircuit",
       "name": "GPCIRCUIT",
       "genre": "race",
@@ -230,11 +251,18 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/gpcircuit.jsdos"
     },
     {
-      "id": "deathrally",
-      "name": "DEATHRALLY",
+      "id": "superoffroads",
+      "name": "SUPEROFFROADS",
       "genre": "race",
-      "year": "1996",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/deathrally.jsdos"
+      "year": "1989",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/superoffroads.jsdos"
+    },
+    {
+      "id": "superkarts",
+      "name": "SUPERSKARTS",
+      "genre": "race",
+      "year": "1989",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/superkarts.jsdos"
     },
     {
       "id": "streero",
