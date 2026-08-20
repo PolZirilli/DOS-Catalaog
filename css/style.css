@@ -638,3 +638,89 @@ body {
   color: #000;
   border-color: #fff;
 }
+
+/* ---------- POPUP DE CONTROLES (F2) ---------- */
+.controls-dialog {
+  width: 100%;
+  max-width: 480px;
+  background: #00aaaa;
+  color: #000;
+}
+
+.controls-body {
+  padding: 12px 16px;
+  text-align: left;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.controls-group-title {
+  font-size: 1.05rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin: 12px 0 4px;
+}
+
+.controls-group-title:first-child {
+  margin-top: 0;
+}
+
+.controls-group-note {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.controls-row .cr-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.controls-row .cr-hint {
+  display: block;
+  font-size: 0.72rem;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+
+.controls-row .cr-key {
+  min-width: 92px;
+  text-align: center;
+  background: #000;
+  color: #55ffff;
+  padding: 2px 6px;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.controls-row .cr-btn {
+  background: #000;
+  color: #55ffff;
+  border: 1px solid #7ab0ff;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.controls-row .cr-btn:hover {
+  background: #00aaaa;
+  color: #000;
+  border-color: #fff;
+}
+
+.controls-row.capturing .cr-btn {
+  background: #ffcc00;
+  color: #000;
+  border-color: #000;
+}
