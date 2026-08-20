@@ -1,3 +1,15 @@
+/* Tipografia real de modo texto VGA (PxPlus IBM VGA8 / Web437_IBM_VGA_8x16),
+   de "The Ultimate Oldschool PC Font Pack" de VileR (CC BY-SA 4.0,
+   https://int10h.org/oldschool-pc-fonts/) -- ver css/fonts/LICENSE-PxPlus_IBM_VGA8.txt.
+   Se auto-hospeda para no depender de que el visitante la tenga instalada. */
+@font-face {
+  font-family: "PerfectDOS";
+  src: url("fonts/PxPlus_IBM_VGA8.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,7 +23,7 @@ body {
 }
 
 body {
-  font-family: "VT323", monospace !important;
+  font-family: "PerfectDOS", "VT323", monospace !important;
   font-weight: 400;
   font-style: normal;
   background: #0000aa;
@@ -21,6 +33,9 @@ body {
   user-select: none;
   cursor: default;
   color: #000000;
+  /* la fuente es bitmap-pixel-art: sin anti-aliasing se ve nitida como en DOS real */
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 /* frame helper: doble linea clasica de TUI DOS, hecha con box-shadow (sin gradientes) */
@@ -34,7 +49,7 @@ body {
 }
 
 .head-frame {
-  font-size: 2rem;
+  font-size: 1.7rem;
   padding: 0px 10px;
   color: #0000aa;
 }
@@ -76,25 +91,51 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
 }
 
 .panel-cols {
   display: flex;
   color: #7ab0ff;
   padding: 3px 2px;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   border-bottom: 1px solid #55aaff;
 }
 
-.panel-cols .col-name {
+.panel-cols .col-name,
+.panel-row .col-name {
   flex: 1;
+}
+
+.panel-cols .col-name {
   text-transform: uppercase;
 }
 
-.panel-cols .col-extra {
-  width: 64px;
+/* columnas Size / Date / Time, iguales en header (.panel-cols) y en cada
+   fila (.panel-row) para que queden alineadas verticalmente */
+.col-size,
+.col-date,
+.col-time {
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.col-size {
+  width: 90px;
   text-align: right;
+}
+
+.col-date {
+  width: 96px;
+  text-align: right;
+  padding-left: 10px;
+}
+
+.col-time {
+  width: 74px;
+  text-align: right;
+  padding-left: 10px;
 }
 
 .panel-list {
@@ -107,7 +148,7 @@ body {
   display: flex;
   align-items: center;
   padding: 2px 2px;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   cursor: pointer;
   white-space: normal;
 }
@@ -121,9 +162,9 @@ body {
   gap: 6px;
 }
 
-.panel-row .col-extra {
-  width: 64px;
-  text-align: right;
+.panel-row .col-size,
+.panel-row .col-date,
+.panel-row .col-time {
   color: #7ab0ff;
 }
 
@@ -142,7 +183,9 @@ body {
 }
 
 .panel-row.selected .col-name,
-.panel-row.selected .col-extra {
+.panel-row.selected .col-size,
+.panel-row.selected .col-date,
+.panel-row.selected .col-time {
   color: #000;
 }
 
@@ -205,7 +248,7 @@ body {
 /* ---------- CMDLINE + RUNNING + FKEYS ---------- */
 #cmdline {
   color: #fff;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   padding: 2px 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -253,8 +296,8 @@ body {
 #fkeys {
   display: flex;
   background: #000;
-  font-size: 2rem;
-  line-height: 1.9rem;
+  font-size: 1.7rem;
+  line-height: 1.7rem;
 }
 
 .fkey {
@@ -426,8 +469,8 @@ body {
   margin-right: auto;
 }
 
-/* ---------- MOBILE BLOCK (estilo dialogo NC) ---------- */
-#mobileBlock {
+/* ---------- MODAL OVERLAY (compartido: aviso mobile + popup de info F3) ---------- */
+.modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
@@ -438,7 +481,7 @@ body {
   padding: 20px;
 }
 
-#mobileBlock.show {
+.modal-overlay.show {
   display: flex;
 }
 
@@ -491,4 +534,107 @@ body {
   height: 100%;
   border: 0;
   background: #000;
+}
+
+/* ---------- POPUP DE INFO DE JUEGO (F3) ---------- */
+/* Mismo esqueleto visual que .mb-dialog (dialogo NC tipo "Help"), pero mas
+   ancho y con el texto alineado a la izquierda -- .mb-body de mas arriba
+   centra el texto porque el aviso mobile es corto; acá lo pisamos. */
+.info-dialog {
+  width: 100%;
+  max-width: 560px;
+  background: #00aaaa;
+  color: #000;
+}
+
+.info-body {
+  padding: 14px 16px;
+  text-align: left;
+  min-height: 60px;
+}
+
+.info-loading {
+  font-size: 1.1rem;
+  padding: 10px 0;
+}
+
+.info-cols {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.info-image {
+  width: 180px;
+  height: 135px;
+  object-fit: cover;
+  border: 2px solid #000;
+  background: #000;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.info-image-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 6px;
+}
+
+.info-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.info-meta {
+  font-size: 1rem;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.info-synopsis {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  max-height: 170px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.info-source {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #003a3a;
+}
+
+.info-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+.info-btn {
+  background: #000;
+  color: #55ffff;
+  border: 1px solid #7ab0ff;
+  padding: 3px 16px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.info-btn:hover {
+  background: #00aaaa;
+  color: #000;
+  border-color: #fff;
 }
