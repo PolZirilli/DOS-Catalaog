@@ -493,16 +493,16 @@ body {
 }
 
 .mb-titlebar {
-    height: 3rem;
     background: #0000aa00;
     color: #fff;
-    font-size: 1rem;
+    font-size: 1.4rem;
     font-weight: 100;
     display: flex;
     align-items: center;
     justify-content: center;
     border-bottom: 6px double #fff;
     text-transform: uppercase;
+    line-height: 4rem;
 }
 
 .mb-body {
@@ -642,10 +642,10 @@ body {
 
 /* ---------- POPUP DE CONTROLES (F2) ---------- */
 .controls-dialog {
-  width: 100%;
-  max-width: 480px;
-  background: #00aaaa;
-  color: #000;
+    width: 100%;
+    max-width: 620px;
+    background: #00aaaa;
+    color: white;
 }
 
 .controls-body {
