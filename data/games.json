@@ -277,6 +277,41 @@
       "genre": "race",
       "year": "1990",
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/StrtRods.jsdos"
+    },
+    {
+      "id": "harddrivin",
+      "name": "HARDDRIVIN",
+      "genre": "race",
+      "year": "1989",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/harddrivin.jsdos"
+    },
+    {
+      "id": "harddrivin2",
+      "name": "HARDDRIVIN2",
+      "genre": "race",
+      "year": "1990",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/harddrivin2.jsdos"
+    },
+    {
+      "id": "nascar",
+      "name": "NASCAR",
+      "genre": "race",
+      "year": "1990",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/nascar.jsdos"
+    },
+    {
+      "id": "stunts",
+      "name": "STUNTS",
+      "genre": "race",
+      "year": "1990",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/stunts.jsdos"
+    },
+    {
+      "id": "stuntdriver",
+      "name": "STUNTDRIVER",
+      "genre": "race",
+      "year": "1990",
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/stuntdriver.jsdos"
     }
   ]
 }
