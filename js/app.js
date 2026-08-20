@@ -1,673 +1,712 @@
-(function mobileGuard() {
-  const uaBlock = /Android|iPhone|iPad|iPod|Windows Phone|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent);
-  const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-  const narrow = Math.min(window.innerWidth, window.innerHeight) < 700;
-  if (uaBlock || (coarsePointer && narrow)) {
-    document.getElementById('mobileBlock').classList.add('show');
-  }
-})();
+// ════════════════════════════════════════════
+//  GENvault — Emulador Sega Mega Drive / Genesis
+//  Motor: Genesis.js (PicoDrive JS puro)
+// ════════════════════════════════════════════
 
-let GENRES = {};
-let GAMES = [];
-let LEFT_ITEMS = [];
-let RIGHT_ITEMS = [];
-let currentGenre = null;
+// ══ REFS UI ══
+const splash = document.getElementById('splashCanvas');
+let emuContainer = document.getElementById('emuContainer');
+const loaderOvrl = document.getElementById('loaderOverlay');
+const ledEl = document.getElementById('led');
+const statusEl = document.getElementById('statusText');
+const fpsEl = document.getElementById('fpsCounter');
+const romNameEl = document.getElementById('romName');
+const errorBox = document.getElementById('errorBox');
+const screenWrap = document.getElementById('screenWrap');
 
-const state = { focus: 'left', leftIndex: 0, rightIndex: 0 };
-const openWins = {};
-const dosInstances = {};
-let zTop = 100;
+// ══ ESTADO ══
+let emuRunning = false;
+let paused = false;
+let lastROMName = '';
+let fpsInterval = null;
+let fpsFrames = 0;
+let fpsLast = performance.now();
 
-const panelLeftList = document.getElementById('panelLeftList');
-const panelRightList = document.getElementById('panelRightList');
-const panelRightHeader = document.getElementById('panelRightHeader');
-const panelLeftStatus = document.getElementById('panelLeftStatus');
-const panelRightStatus = document.getElementById('panelRightStatus');
-const cmdline = document.getElementById('cmdline');
-const runningEl = document.getElementById('running');
-const fkeysEl = document.getElementById('fkeys');
-// Pueden no existir si index.html quedó desactualizado respecto a este
-// archivo (ej. deploy parcial) -- todo lo que los use más abajo chequea
-// null primero, así una falta de sincronía nunca tira abajo el resto del
-// script (que es justo lo que pasó: F3 no abría nada y las columnas
-// quedaban vacías porque este app.js estaba desactualizado en el server).
-const infoModalEl = document.getElementById('infoModal');
-const infoModalBody = document.getElementById('infoModalBody');
-const infoModalCloseBtn = document.getElementById('infoModalClose');
+const TARGET_FPS = 60;
+const FRAME_DURATION = 1000 / TARGET_FPS;
+const DEAD = 0.45;
 
-// Repo público de GitHub de donde sale la fecha real del último cambio a
-// data/games.json (columna Date/Time del panel izquierdo). Si el repo
-// cambia de dueño/nombre, actualizar acá.
-const GITHUB_REPO = 'PolZirilli/dosvault';
+// ════════════════════════════════════════════
+//  GALERÍA DE ROMs — catálogo centralizado en data/games.json.
+//  Cada juego trae { id, name, region, cover, url }. El carousel se
+//  puebla dinámicamente con lo que haya ahí: si hay uno, muestra uno;
+//  si no carga nada, muestra un estado vacío (nunca cards fantasma).
+// ════════════════════════════════════════════
+const GAMES_JSON_URL = 'data/games.json';
+let ROM_LIBRARY = [];
+let catalogErrorMsg = null;
 
-const pad2 = n => String(n).padStart(2, '0');
-
-// Convierte una fecha real (Date o string ISO) al formato "MM-DD-YY" /
-// "H:MMa" que ya usa el resto de la UI estilo Norton Commander.
-function toDosDateTime(input) {
-  const d = input instanceof Date ? input : new Date(input);
-  if (isNaN(d.getTime())) return null;
-  const h24 = d.getHours();
-  const h12 = ((h24 + 11) % 12) + 1;
-  const ampm = h24 < 12 ? 'a' : 'p';
-  return {
-    date: `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}-${String(d.getFullYear()).slice(-2)}`,
-    time: `${h12}:${pad2(d.getMinutes())}${ampm}`,
-  };
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
 }
 
-// ---- Fecha real del último commit que tocó data/games.json (columna
-// Date/Time del panel izquierdo -- es la misma para todas las categorías,
-// porque todas dependen del mismo archivo). Se pide una sola vez a la API
-// pública de GitHub (sin API key, con CORS habilitado) y se cachea.
-let gamesJsonDateTimePromise = null;
-function fetchGamesJsonDateTime() {
-  if (!gamesJsonDateTimePromise) {
-    gamesJsonDateTimePromise = fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/commits?path=data/games.json&page=1&per_page=1`
-    )
-      .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-      .then(commits => {
-        const iso = commits && commits[0] && commits[0].commit && commits[0].commit.author && commits[0].commit.author.date;
-        const dt = iso && toDosDateTime(iso);
-        if (!dt) throw new Error('respuesta sin fecha de commit');
-        return dt;
-      })
-      .catch(err => {
-        console.error('No se pudo obtener la fecha real de data/games.json desde GitHub:', err);
-        return null; // el llamador muestra "N/D" si esto es null
-      });
-  }
-  return gamesJsonDateTimePromise;
-}
-
-// ---- Tamaño y fecha reales del bundle de cada juego (columnas Size/Date/
-// Time del panel derecho). Se leen con un HEAD al propio archivo del
-// bundle -- Content-Length y Last-Modified son headers "CORS-safelisted",
-// así que se pueden leer aunque el bucket no exponga headers custom,
-// siempre que el bucket permita el origen del sitio en su política CORS.
-const BUNDLE_INFO_CACHE = {};
-function fetchBundleInfo(g) {
-  if (!g.bundle) return Promise.resolve(null);
-  if (!(g.id in BUNDLE_INFO_CACHE)) {
-    BUNDLE_INFO_CACHE[g.id] = fetch(g.bundle, { method: 'HEAD' })
-      .then(res => {
+async function loadGameLibrary() {
+    try {
+        const res = await fetch(GAMES_JSON_URL, { cache: 'no-store' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        const len = res.headers.get('content-length');
-        const lastMod = res.headers.get('last-modified');
-        return {
-          size: len != null ? parseInt(len, 10) : null,
-          dateTime: lastMod ? toDosDateTime(new Date(lastMod)) : null,
-        };
-      })
-      .catch(err => {
-        console.error(`No se pudo leer tamaño/fecha real de ${g.bundle}:`, err);
-        return null;
-      });
-  }
-  return BUNDLE_INFO_CACHE[g.id];
-}
-
-// Nombre estilo "8.3" de DOS: mayúsculas, máximo `max` caracteres. Si es más
-// largo, trunca y agrega "~1" como hace Windows/DOS al generar un nombre
-// corto a partir de uno largo (ej. "DANGEROUSDAVE" -> "DANGER~1").
-function toDosName(name, max = 7) {
-  const upper = String(name).toUpperCase();
-  if (upper.length <= max) return upper;
-  return upper.slice(0, Math.max(1, max - 2)) + '~1';
-}
-
-function buildLeftItems() {
-  LEFT_ITEMS = Object.keys(GENRES).map(id => {
-    const count = GAMES.filter(g => g.genre === id).length;
-    return { id, label: GENRES[id], count };
-  }).filter(item => item.count > 0);
-}
-
-function renderLeftPanel() {
-  panelLeftList.innerHTML = '';
-  LEFT_ITEMS.forEach((item, i) => {
-    const row = document.createElement('div');
-    row.className = 'panel-row is-dir' + (state.focus === 'left' && i === state.leftIndex ? ' selected' : '');
-    // Los géneros son "carpetas": Size va como SUB-DIR (no tienen tamaño de
-    // archivo propio). Date/Time arrancan en "..." y se completan solas
-    // abajo con la fecha real del último commit a data/games.json.
-    row.innerHTML = `
-      <div class="col-name">${item.label.toUpperCase()}\\</div>
-      <div class="col-size">SUB-DIR</div>
-      <div class="col-date">...</div>
-      <div class="col-time">...</div>`;
-    row.addEventListener('click', () => {
-      state.focus = 'left';
-      state.leftIndex = i;
-      selectGenre(item.id);
-      render();
-    });
-    row.addEventListener('dblclick', () => {
-      state.focus = 'right';
-      render();
-    });
-    panelLeftList.appendChild(row);
-  });
-
-  // Una sola consulta a GitHub (cacheada) alcanza para las 6-9 filas: todas
-  // dependen del mismo archivo data/games.json.
-  fetchGamesJsonDateTime().then(dt => {
-    panelLeftList.querySelectorAll('.col-date').forEach(el => { el.textContent = dt ? dt.date : 'N/D'; });
-    panelLeftList.querySelectorAll('.col-time').forEach(el => { el.textContent = dt ? dt.time : 'N/D'; });
-    updateStatusBars();
-  });
-}
-
-function selectGenre(genreId) {
-  currentGenre = genreId;
-  state.rightIndex = 0;
-  RIGHT_ITEMS = GAMES.filter(g => g.genre === genreId);
-  const label = GENRES[genreId] || genreId;
-  panelRightHeader.textContent = `C:\\${label.toUpperCase()}`;
-}
-
-function renderRightPanel() {
-  panelRightList.innerHTML = '';
-  RIGHT_ITEMS.forEach((g, i) => {
-    const row = document.createElement('div');
-    row.className = 'panel-row is-file' + (state.focus === 'right' && i === state.rightIndex ? ' selected' : '');
-    // Nombre siempre en mayúsculas y truncado estilo 8.3 de DOS (máx. 7
-    // caracteres + "~1" si no entra) -- el título real completo queda
-    // disponible en el tooltip (title=) y en el popup de info (F3).
-    const dosName = toDosName(g.name, 7);
-    row.title = g.title || g.name;
-    row.innerHTML = `
-      <div class="col-name">
-        <span>${dosName}<span style="opacity:.6">.EXE</span></span>
-      </div>
-      <div class="col-size">...</div>
-      <div class="col-date">...</div>
-      <div class="col-time">...</div>`;
-    row.addEventListener('click', () => {
-      state.focus = 'right';
-      state.rightIndex = i;
-      render();
-    });
-    row.addEventListener('dblclick', () => launchGame(g));
-    panelRightList.appendChild(row);
-
-    // Tamaño y fecha reales del bundle -- llegan async (HEAD request), se
-    // completan en el lugar sin re-renderizar todo el panel. Si para cuando
-    // responde ya se navegó a otra categoría, la fila ya no está en el DOM
-    // y no se toca nada (evita pisar datos de otro juego).
-    fetchBundleInfo(g).then(info => {
-      if (!row.isConnected) return;
-      const sizeEl = row.querySelector('.col-size');
-      const dateEl = row.querySelector('.col-date');
-      const timeEl = row.querySelector('.col-time');
-      sizeEl.textContent = info && info.size != null ? String(info.size) : 'N/D';
-      dateEl.textContent = info && info.dateTime ? info.dateTime.date : 'N/D';
-      timeEl.textContent = info && info.dateTime ? info.dateTime.time : 'N/D';
-      if (RIGHT_ITEMS[state.rightIndex] === g) updateStatusBars();
-    });
-  });
-}
-
-function updateCmdline() {
-  let path = 'C:\\CATEGORIAS';
-  if (currentGenre) {
-    path += `\\${(GENRES[currentGenre] || currentGenre).toUpperCase()}`;
-    if (state.focus === 'right' && RIGHT_ITEMS[state.rightIndex]) {
-      path += `\\${RIGHT_ITEMS[state.rightIndex].id.toUpperCase()}.EXE`;
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error('data/games.json debe ser un array de juegos.');
+        ROM_LIBRARY = data.filter(g => g && typeof g.name === 'string' && typeof g.url === 'string');
+        catalogErrorMsg = ROM_LIBRARY.length ? null : 'Todavía no hay ROMs cargados en el catálogo.';
+    } catch (err) {
+        console.error('No se pudo cargar data/games.json:', err);
+        ROM_LIBRARY = [];
+        catalogErrorMsg = 'No se pudo cargar el catálogo de ROMs (data/games.json). Podés cargar tu ROM manualmente abajo.';
     }
-  }
-  cmdline.innerHTML = `${path}&gt;<span class="cursor-blink"></span>`;
+    renderCarousel();
 }
 
-function updateStatusBars() {
-  const leftItem = LEFT_ITEMS[state.leftIndex];
-  if (leftItem) {
-    // Reusa lo que ya haya en caché (misma fecha real de data/games.json
-    // que usan las columnas); si todavía no llegó, no dispara otro fetch,
-    // solo muestra "..." hasta que renderLeftPanel la complete.
-    const cached = gamesJsonDateTimePromise;
-    panelLeftStatus.innerHTML = `<span class="st-name">${leftItem.label.toUpperCase()}\\ &lt;DIR&gt;</span><span class="st-date">...</span>`;
-    if (cached) {
-      cached.then(dt => {
-        const el = panelLeftStatus.querySelector('.st-date');
-        if (el) el.textContent = dt ? `${dt.date}  ${dt.time}` : 'N/D';
-      });
+// Ícono de cartucho en pixel-art puro CSS/SVG — se usa como portada por
+// default (o si `cover` no carga) hasta que el juego tenga portada real.
+const CART_ICON_SVG = `
+<svg class="cart-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  <path d="M6 2h12v3h1v3h-1v11H6V8H5V5h1V2z m2 2v3h8V4H8z m-1 6v9h10v-9H7z m2 2h2v2H9v-2z m4 0h2v2h-2v-2z"/>
+</svg>`;
+
+// ════════════════════════════════════════════
+//  CAROUSEL DE ROMs — nunca más de 2 filas visibles.
+//  El número de columnas se adapta al ancho (4 / 3 / 2), y cada
+//  "página" del carousel siempre tiene columnas × 2 tarjetas.
+// ════════════════════════════════════════════
+let carouselPage = 0;
+let carouselPages = [];
+let searchQuery = '';
+
+function getCarouselColumns() {
+    const w = window.innerWidth;
+    if (w <= 620) return 2;
+    if (w <= 1180) return 3;
+    return 5;
+}
+
+// Filtra por nombre o región ("ESP", "USA", etc.) — sin distinguir mayúsculas/acentos exactos.
+function getVisibleLibrary() {
+    if (!searchQuery) return ROM_LIBRARY;
+    const q = searchQuery.toLowerCase();
+    return ROM_LIBRARY.filter(rom =>
+        rom.name.toLowerCase().includes(q) ||
+        (rom.region && rom.region.toLowerCase().includes(q)));
+}
+
+function buildCarouselPages(list) {
+    const perPage = getCarouselColumns() * 2;
+    const pages = [];
+    for (let i = 0; i < list.length; i += perPage) {
+        pages.push(list.slice(i, i + perPage));
     }
-  } else {
-    panelLeftStatus.innerHTML = '';
-  }
-  const rightItem = RIGHT_ITEMS[state.rightIndex];
-  if (rightItem) {
-    panelRightStatus.innerHTML = `<span class="st-name">${rightItem.name.toUpperCase()}.EXE</span><span class="st-date">...</span>`;
-    const cached = BUNDLE_INFO_CACHE[rightItem.id];
-    if (cached) {
-      cached.then(info => {
-        if (RIGHT_ITEMS[state.rightIndex] !== rightItem) return;
-        const el = panelRightStatus.querySelector('.st-date');
-        if (el) el.textContent = info && info.dateTime ? `${info.dateTime.date}  ${info.dateTime.time}` : 'N/D';
-      });
+    return pages.length ? pages : [[]];
+}
+
+function romCardHTML(rom) {
+    const name = escapeHtml(rom.name);
+    const url = escapeHtml(rom.url);
+    const tagHTML = rom.region ? `<span class="rom-tag">${escapeHtml(rom.region)}</span>` : '';
+    const coverHTML = rom.cover
+        ? `<img class="rom-cover-img" src="${escapeHtml(rom.cover)}" alt="${name}" loading="lazy">`
+        : CART_ICON_SVG;
+    return `
+        <button type="button" class="rom-card" data-url="${url}" data-name="${name}">
+            <span class="rom-cover">
+                ${coverHTML}
+                ${tagHTML}
+            </span>
+            <span class="rom-info">
+                <span class="rom-title">${name}</span>
+            </span>
+        </button>`;
+}
+
+function renderCarousel() {
+    const track = document.getElementById('romTrack');
+    const dotsEl = document.getElementById('pageDots');
+    const prevBtn = document.getElementById('pagePrev');
+    const nextBtn = document.getElementById('pageNext');
+    const paginationEl = document.querySelector('.rom-pagination');
+    if (!track) return;
+
+    const visible = getVisibleLibrary();
+
+    // Sin resultados — catálogo vacío, falló la carga, o la búsqueda no matcheó nada.
+    if (!visible.length) {
+        const msg = !ROM_LIBRARY.length
+            ? (catalogErrorMsg || 'No hay ROMs en el catálogo.')
+            : `No se encontraron juegos para "${searchQuery}".`;
+        track.innerHTML = `<div class="rom-page rom-empty-page"><p class="rom-empty">${escapeHtml(msg)}</p></div>`;
+        track.style.transform = 'translateX(0)';
+        if (paginationEl) paginationEl.style.display = 'none';
+        if (dotsEl) dotsEl.innerHTML = '';
+        return;
     }
-  } else {
-    panelRightStatus.innerHTML = '';
-  }
+
+    carouselPages = buildCarouselPages(visible);
+    if (carouselPage >= carouselPages.length) carouselPage = carouselPages.length - 1;
+    if (carouselPage < 0) carouselPage = 0;
+
+    // Cada página solo contiene las cards que existen — nunca se rellena
+    // con celdas vacías (si el último grupo tiene menos que columnas×2,
+    // el grid de esa página simplemente muestra menos cards).
+    track.innerHTML = carouselPages.map(page => `<div class="rom-page">${page.map(romCardHTML).join('')}</div>`).join('');
+    track.querySelectorAll('.rom-card').forEach(card => {
+        card.addEventListener('click', () => loadPresetROM(card.dataset.url, card.dataset.name));
+    });
+    // Si una portada real (rom.cover) no carga, caemos al ícono placeholder.
+    track.querySelectorAll('.rom-cover-img').forEach(img => {
+        img.addEventListener('error', () => { img.outerHTML = CART_ICON_SVG; }, { once: true });
+    });
+
+    const showPagination = carouselPages.length > 1;
+    if (paginationEl) paginationEl.style.display = showPagination ? '' : 'none';
+
+    if (dotsEl) {
+        dotsEl.innerHTML = '';
+        if (showPagination) {
+            carouselPages.forEach((_, i) => {
+                const dot = document.createElement('span');
+                dot.className = 'dot' + (i === carouselPage ? ' active' : '');
+                dot.addEventListener('click', () => goToCarouselPage(i));
+                dotsEl.appendChild(dot);
+            });
+        }
+    }
+
+    if (prevBtn) prevBtn.disabled = carouselPage <= 0;
+    if (nextBtn) nextBtn.disabled = carouselPage >= carouselPages.length - 1;
+
+    track.style.transform = `translateX(-${carouselPage * 100}%)`;
 }
 
-function render() {
-  renderLeftPanel();
-  renderRightPanel();
-  updateCmdline();
-  updateStatusBars();
+function goToCarouselPage(index) {
+    carouselPage = index;
+    renderCarousel();
 }
 
-function moveSelection(delta) {
-  if (state.focus === 'left') {
-    if (!LEFT_ITEMS.length) return;
-    state.leftIndex = (state.leftIndex + delta + LEFT_ITEMS.length) % LEFT_ITEMS.length;
-    selectGenre(LEFT_ITEMS[state.leftIndex].id);
-  } else {
-    if (!RIGHT_ITEMS.length) return;
-    state.rightIndex = (state.rightIndex + delta + RIGHT_ITEMS.length) % RIGHT_ITEMS.length;
-  }
-  render();
-}
-
-function switchFocus() {
-  if (state.focus === 'left') {
-    if (!currentGenre && LEFT_ITEMS.length) selectGenre(LEFT_ITEMS[state.leftIndex].id);
-    state.focus = 'right';
-  } else {
-    state.focus = 'left';
-  }
-  render();
-}
-
-function activateSelection() {
-  if (state.focus === 'left') {
-    switchFocus();
-  } else if (RIGHT_ITEMS[state.rightIndex]) {
-    launchGame(RIGHT_ITEMS[state.rightIndex]);
-  }
-}
-
-document.addEventListener('keydown', e => {
-  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-  // Con el popup de info (F3) abierto, Escape lo cierra y el resto de los
-  // atajos de navegación quedan bloqueados para no mover la selección de
-  // atrás sin que se vea.
-  if (infoModalEl && infoModalEl.classList.contains('show')) {
-    if (e.key === 'Escape') { e.preventDefault(); closeInfoModal(); }
-    return;
-  }
-  switch (e.key) {
-    case 'ArrowUp': e.preventDefault(); moveSelection(-1); break;
-    case 'ArrowDown': e.preventDefault(); moveSelection(1); break;
-    case 'Tab':
-    case 'ArrowLeft':
-    case 'ArrowRight': e.preventDefault(); switchFocus(); break;
-    case 'Enter': e.preventDefault(); activateSelection(); break;
-    case 'F1': e.preventDefault(); showHelp(); break;
-    case 'F3': e.preventDefault(); openInfoModalForSelection(); break;
-    case 'F5': e.preventDefault(); render(); break;
-  }
+document.getElementById('romSearch')?.addEventListener('input', e => {
+    searchQuery = e.target.value.trim();
+    carouselPage = 0;
+    renderCarousel();
 });
 
-function showHelp() {
-  cmdline.innerHTML = 'Flechas: moverse &nbsp;|&nbsp; Tab: cambiar panel &nbsp;|&nbsp; Enter: abrir/ejecutar<span class="cursor-blink"></span>';
-  setTimeout(updateCmdline, 2500);
-}
+document.getElementById('pagePrev')?.addEventListener('click', () => {
+    if (carouselPage > 0) goToCarouselPage(carouselPage - 1);
+});
+document.getElementById('pageNext')?.addEventListener('click', () => {
+    if (carouselPage < carouselPages.length - 1) goToCarouselPage(carouselPage + 1);
+});
 
-/* ---------- FKEYS ---------- */
-const FKEYS = [
-  { key: 'F1', label: 'Ayuda', action: showHelp },
-  { key: 'F3', label: 'Info', action: () => openInfoModalForSelection() },
-  { key: 'F4', label: 'Ejecutar', action: activateSelection },
-  { key: 'F5', label: 'Refrescar', action: render },
-  {
-    key: 'F10', label: 'Cerrar activa', action: () => {
-      const ids = Object.keys(openWins);
-      if (ids.length) closeWin(ids[ids.length - 1]);
-    }
-  },
+let carouselResizeTO = null;
+window.addEventListener('resize', () => {
+    clearTimeout(carouselResizeTO);
+    carouselResizeTO = setTimeout(renderCarousel, 200);
+});
+
+// ════════════════════════════════════════════
+//  MAPEO DE ACCIONES (teclado + gamepad)
+// ════════════════════════════════════════════
+const ACTIONS = [
+    { id: 'up', label: 'D-Pad Up' },
+    { id: 'down', label: 'D-Pad Down' },
+    { id: 'left', label: 'D-Pad Left' },
+    { id: 'right', label: 'D-Pad Right' },
+    { id: 'a', label: 'Button A' },
+    { id: 'b', label: 'Button B' },
+    { id: 'c', label: 'Button C' },
+    { id: 'x', label: 'Button X' },
+    { id: 'y', label: 'Button Y' },
+    { id: 'z', label: 'Button Z' },
+    { id: 'start', label: 'Start' },
+    { id: 'mode', label: 'Mode' },
 ];
+const DPAD_IDS = ['up', 'down', 'left', 'right'];
+const BUTTON_IDS = ['a', 'b', 'c', 'x', 'y', 'z'];
+const EXTRA_IDS = ['start', 'mode'];
 
-function renderFkeys() {
-  fkeysEl.innerHTML = '';
-  FKEYS.forEach(fk => {
-    const el = document.createElement('div');
-    el.className = 'fkey';
-    el.innerHTML = `<span class="num">${fk.key.replace('F', '')}</span><span class="label">${fk.label}</span>`;
-    el.addEventListener('click', fk.action);
-    fkeysEl.appendChild(el);
-  });
+// ── Teclado — editable por el usuario, se guarda en localStorage ──
+const DEFAULT_KEYMAP = {
+    up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
+    a: 'KeyA', b: 'KeyS', c: 'KeyD', x: 'KeyQ', y: 'KeyW', z: 'KeyE',
+    start: 'Enter', mode: 'KeyZ',
+};
+let keymap = loadKeymap();
+function loadKeymap() {
+    try { const s = localStorage.getItem('genvault_keymap'); if (s) return { ...DEFAULT_KEYMAP, ...JSON.parse(s) }; } catch (_) { }
+    return { ...DEFAULT_KEYMAP };
+}
+function saveKeymap() {
+    try { localStorage.setItem('genvault_keymap', JSON.stringify(keymap)); } catch (_) { }
 }
 
-/* ---------- POPUP DE INFO (F3): Wikipedia + Wikidata ---------- */
-// Título, sinopsis e imagen salen de la API pública de Wikipedia
-// (action=query, sin API key, con &origin=* para que funcione con fetch()
-// desde cualquier dominio). La distribuidora sale de Wikidata (propiedad
-// P123 "publisher") a partir del mismo artículo. Se busca primero en
-// Wikipedia en español y, si no hay resultado, en inglés (muchos juegos DOS
-// viejos tienen mejor cobertura ahí). Resultado en caché por juego para no
-// repetir la búsqueda cada vez que se abre el popup.
-const WIKI_CACHE = {};
-
-async function wikiFetchJson(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+function keyLabel(code) {
+    if (!code) return '—';
+    const named = {
+        ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+        Enter: '↵', Space: 'SPACE',
+        ControlLeft: 'CTRL', ControlRight: 'CTRL',
+        ShiftLeft: 'SHIFT', ShiftRight: 'SHIFT',
+        AltLeft: 'ALT', AltRight: 'ALT',
+    };
+    if (named[code]) return named[code];
+    if (code.startsWith('Key')) return code.slice(3);
+    if (code.startsWith('Digit')) return code.slice(5);
+    return code;
 }
 
-async function fetchWikidataPublisher(wikidataId, lang) {
-  try {
-    const claimsUrl = `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${wikidataId}&property=P123&format=json&origin=*`;
-    const claims = (await wikiFetchJson(claimsUrl)).claims;
-    const targetId = claims && claims.P123 && claims.P123[0] &&
-      claims.P123[0].mainsnak && claims.P123[0].mainsnak.datavalue &&
-      claims.P123[0].mainsnak.datavalue.value && claims.P123[0].mainsnak.datavalue.value.id;
-    if (!targetId) return null;
-    const labelUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${targetId}&props=labels&languages=${lang}|en&format=json&origin=*`;
-    const labels = (await wikiFetchJson(labelUrl)).entities[targetId].labels;
-    return (labels[lang] && labels[lang].value) || (labels.en && labels.en.value) || null;
-  } catch (err) {
-    console.error('No se pudo obtener la distribuidora desde Wikidata:', err);
-    return null;
-  }
+// ── Gamepad ──
+const DEFAULT_GP_MAP = {
+    0: 'b', 1: 'a', 2: 'x', 3: 'y', 4: 'c', 5: 'z',
+    8: 'mode', 9: 'start',
+    12: 'up', 13: 'down', 14: 'left', 15: 'right',
+};
+
+let gpMap = loadGPMap();
+function loadGPMap() {
+    try { const s = localStorage.getItem('totogen_gpmap'); if (s) return JSON.parse(s); } catch (_) { }
+    return { ...DEFAULT_GP_MAP };
+}
+function saveGPMap() {
+    try { localStorage.setItem('totogen_gpmap', JSON.stringify(gpMap)); } catch (_) { }
 }
 
-async function fetchWikiInfo(query) {
-  for (const lang of ['es', 'en']) {
-    try {
-      const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + ' video game')}&srlimit=1&format=json&origin=*`;
-      const search = (await wikiFetchJson(searchUrl)).query.search;
-      if (!search || !search.length) continue;
-      const pageId = search[0].pageid;
+// ════════════════════════════════════════════
+//  PREVENIR SCROLL CON FLECHAS
+// ════════════════════════════════════════════
+window.addEventListener('keydown', e => {
+    if (!emuRunning) return;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+}, { passive: false });
 
-      const sumUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&pageids=${pageId}&prop=extracts%7Cpageimages%7Cpageprops&exintro=1&explaintext=1&piprop=original&format=json&origin=*`;
-      const page = (await wikiFetchJson(sumUrl)).query.pages[pageId];
-      if (!page) continue;
-
-      const wikidataId = page.pageprops && page.pageprops.wikibase_item;
-      const publisher = wikidataId ? await fetchWikidataPublisher(wikidataId, lang) : null;
-
-      return {
-        title: page.title,
-        extract: (page.extract || '').trim(),
-        image: page.original ? page.original.source : null,
-        publisher,
-        sourceUrl: `https://${lang}.wikipedia.org/?curid=${pageId}`,
-      };
-    } catch (err) {
-      console.error(`Búsqueda en Wikipedia (${lang}) falló:`, err);
-    }
-  }
-  return null;
+// ════════════════════════════════════════════
+//  SPLASH
+// ════════════════════════════════════════════
+function drawSplash() {
+    const ctx = splash.getContext('2d');
+    const w = splash.width, h = splash.height;
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, '#000d22'); g.addColorStop(1, '#001a44');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(0,102,255,0.10)'; ctx.lineWidth = 1;
+    for (let y = 0; y < h; y += 16) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    for (let x = 0; x < w; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    ctx.fillStyle = '#2a3a52'; ctx.font = '7px Orbitron, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('LOAD A ROM TO START', w / 2, h / 2);
 }
 
-function openInfoModalForSelection() {
-  const g = RIGHT_ITEMS[state.rightIndex];
-  if (state.focus === 'right' && g) openInfoModal(g);
+// ════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════
+function setStatus(msg, ledState) {
+    statusEl.textContent = msg;
+    ledEl.className = 'led' + (ledState ? ' ' + ledState : '');
+}
+function enableButtons(play, pause, stop) {
+    document.getElementById('btnPlay').disabled = !play;
+    document.getElementById('btnPause').disabled = !pause;
+    document.getElementById('btnStop').disabled = !stop;
+}
+function showError(msg, hint) {
+    errorBox.style.display = 'block';
+    document.getElementById('errorMsg').textContent = ' ' + msg;
+    document.getElementById('errorHint').textContent = hint || '';
+}
+function hideError() { errorBox.style.display = 'none'; }
+function showLoader(txt) {
+    document.getElementById('loaderText').textContent = txt || 'LOADING...';
+    loaderOvrl.style.display = 'flex';
+}
+function hideLoader() { loaderOvrl.style.display = 'none'; }
+
+// ════════════════════════════════════════════
+//  FPS
+// ════════════════════════════════════════════
+function startFPS() {
+    stopFPS(); fpsFrames = 0; fpsLast = performance.now();
+    fpsInterval = setInterval(() => {
+        const now = performance.now(), delta = now - fpsLast;
+        if (delta >= 1000) {
+            fpsEl.textContent = Math.min(Math.round((fpsFrames / delta) * 1000), 60) + ' FPS';
+            fpsFrames = 0; fpsLast = now;
+        }
+        fpsFrames++;
+    }, FRAME_DURATION);
+}
+function stopFPS() {
+    if (fpsInterval) { clearInterval(fpsInterval); fpsInterval = null; }
+    fpsEl.textContent = '';
 }
 
-async function openInfoModal(g) {
-  if (!g || !infoModalEl || !infoModalBody) return;
-  const displayTitle = g.title || g.name;
-  infoModalBody.innerHTML = `<div class="info-loading">Buscando información de ${displayTitle}...<span class="cursor-blink"></span></div>`;
-  infoModalEl.classList.add('show');
+// ════════════════════════════════════════════
+//  GAMEPAD POLLING
+// ════════════════════════════════════════════
+let gpPrev = {}, gpAxesPrev = { up: false, down: false, left: false, right: false };
 
-  if (!(g.id in WIKI_CACHE)) {
-    WIKI_CACHE[g.id] = await fetchWikiInfo(g.title || g.name);
-  }
-  // Por si se cerró el popup mientras la búsqueda seguía en vuelo.
-  if (infoModalEl.classList.contains('show')) renderInfoModal(g, WIKI_CACHE[g.id]);
+function actionToKey(id) { return keymap[id] || null; }
+function fireKey(code, down) {
+    document.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, key: code, bubbles: true }));
 }
 
-function renderInfoModal(g, data) {
-  if (!infoModalBody) return;
-  const titleText = (data && data.title) || g.title || g.name;
-  const publisher = (data && data.publisher) || 'Desconocida';
-  const synopsis = (data && data.extract) ? data.extract : 'No se encontró sinopsis para este juego en Wikipedia.';
-  const image = data && data.image;
+function pollGamepad() {
+    if (!emuRunning || paused) return;
+    const gp = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(g => g?.connected);
+    if (!gp) return;
 
-  infoModalBody.innerHTML = `
-    <div class="info-cols">
-      ${image
-      ? `<img class="info-image" src="${image}" alt="${titleText}">`
-      : `<div class="info-image info-image-empty">Sin imagen<br>disponible</div>`}
-      <div class="info-text">
-        <div class="info-title">${titleText}</div>
-        <div class="info-meta"><b>Año:</b> ${g.year} &nbsp;&nbsp; <b>Distribuidora:</b> ${publisher}</div>
-        <div class="info-synopsis">${synopsis}</div>
-        ${data && data.sourceUrl ? `<a class="info-source" href="${data.sourceUrl}" target="_blank" rel="noopener">Fuente: Wikipedia</a>` : ''}
-      </div>
-    </div>`;
+    gp.buttons.forEach((btn, i) => {
+        const pressed = btn.pressed || btn.value > 0.5;
+        const code = actionToKey(gpMap[i]);
+        if (!code) return;
+        if (pressed && !gpPrev[i]) fireKey(code, true);
+        if (!pressed && gpPrev[i]) fireKey(code, false);
+        gpPrev[i] = pressed;
+    });
+
+    const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+    const axL = ax < -DEAD, axR = ax > DEAD, axU = ay < -DEAD, axD = ay > DEAD;
+    [[axL, gpAxesPrev.left, 'left'], [axR, gpAxesPrev.right, 'right'],
+    [axU, gpAxesPrev.up, 'up'], [axD, gpAxesPrev.down, 'down']].forEach(([c, p, aid]) => {
+        const code = actionToKey(aid);
+        if (!code) return;
+        if (c && !p) fireKey(code, true);
+        if (!c && p) fireKey(code, false);
+    });
+    gpAxesPrev = { left: axL, right: axR, up: axU, down: axD };
 }
 
-function closeInfoModal() {
-  if (infoModalEl) infoModalEl.classList.remove('show');
+let gpPollInterval = null;
+function startGPPoll() { stopGPPoll(); gpPollInterval = setInterval(pollGamepad, FRAME_DURATION); }
+function stopGPPoll() {
+    if (gpPollInterval) { clearInterval(gpPollInterval); gpPollInterval = null; }
+    gpPrev = {}; gpAxesPrev = { up: false, down: false, left: false, right: false };
 }
 
-if (infoModalCloseBtn) infoModalCloseBtn.addEventListener('click', closeInfoModal);
-// Click en el fondo oscuro (fuera del diálogo) también cierra.
-if (infoModalEl) infoModalEl.addEventListener('click', e => { if (e.target === infoModalEl) closeInfoModal(); });
+window.addEventListener('gamepadconnected', e => {
+    const el = document.getElementById('gamepadStatus');
+    el.textContent = '🎮 Connected: ' + e.gamepad.id.substring(0, 55);
+    el.classList.add('connected');
+    renderGPMap();
+});
+window.addEventListener('gamepaddisconnected', () => {
+    const el = document.getElementById('gamepadStatus');
+    el.textContent = 'Gamepad disconnected';
+    el.classList.remove('connected');
+    stopGPPoll();
+});
 
-/* ---------- WINDOWS / MOTORES DE EMULACIÓN ---------- */
-// Un juego corre con js-dos (DOSBox/WASM) por default. Si en games.json trae
-// "engine": "scummvm", se usa el motor nativo de ScummVM (ver
-// js/scummvm-engine.js) en vez de emular la PC completa.
-function launchGame(g) {
-  if (openWins[g.id]) {
-    focusWin(g.id);
-    restoreWin(g.id);
-    return;
-  }
-  const win = document.createElement('div');
-  win.className = 'window';
-  const w = 520, h = 360;
-  const left = 40 + Object.keys(openWins).length * 24;
-  const top = 30 + Object.keys(openWins).length * 24;
-  win.style.width = w + 'px'; win.style.height = h + 'px';
-  win.style.left = left + 'px'; win.style.top = top + 'px';
-  win.style.zIndex = ++zTop;
+// ════════════════════════════════════════════
+//  FULLSCREEN
+// ════════════════════════════════════════════
+const btnFullscreen = document.getElementById('btnFullscreen');
+btnFullscreen.addEventListener('click', toggleFullscreen);
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange'].forEach(ev =>
+    document.addEventListener(ev, updateFullscreenBtn));
 
-  const isScummvm = g.engine === 'scummvm';
-
-  win.innerHTML = `
-    <div class="titlebar">
-      <div class="titlebar-title">${g.name.toUpperCase()}.EXE</div>
-      <div class="win-controls">
-        ${isScummvm ? '<span class="win-btn menu" title="Menu ScummVM (Guardar/Cargar/Opciones)">[≡]</span><span class="win-btn fs" title="Pantalla completa (ESC queda libre para el juego)">[⛶]</span>' : ''}
-        <span class="win-btn max">[□]</span>
-        <span class="win-btn close">[X]</span>
-      </div>
-    </div>
-    <div class="win-body">
-      <div class="boot-lines"></div>
-      <div class="win-screen" style="display:none;">
-        <div class="big-title">${g.name.toUpperCase()}</div>
-        <div class="hint">Todavía no hay un bundle asignado a este juego. Agregalo en data/games.json (campo "bundle") o dejalo local en la carpeta games/ para que arranque acá el motor real.</div>
-        <div style="margin-top:16px;">C:\\GAMES\\${g.id.toUpperCase()}&gt;<span class="cursor-blink"></span></div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(win);
-  openWins[g.id] = win;
-
-  const bootLines = win.querySelector('.boot-lines');
-  const screen = win.querySelector('.win-screen');
-  const body = win.querySelector('.win-body');
-  const lines = [
-    isScummvm ? 'ScummVM Engine v1.0' : 'MS-DOS Emulator v1.0',
-    isScummvm ? 'Detectando motor del juego...' : 'Detectando controladora de sonido... Sound Blaster 16 OK',
-    `Montando C:\\GAMES\\${g.id.toUpperCase()}...`,
-    isScummvm ? 'Auto-detectando juego...' : `Cargando ${g.id.toUpperCase()}.EXE...`,
-  ];
-  lines.forEach((t, i) => {
-    setTimeout(() => {
-      const l = document.createElement('div');
-      l.className = 'boot-line';
-      l.textContent = t;
-      bootLines.appendChild(l);
-    }, i * 260);
-  });
-
-  setTimeout(() => {
-    bootLines.style.display = 'none';
-    if (g.bundle && isScummvm) {
-      body.classList.add('no-pad');
-      const container = document.createElement('div');
-      container.className = 'jsdos-container';
-      body.appendChild(container);
-      if (window.ScummVMEngine) {
-        dosInstances[g.id] = window.ScummVMEngine.run(container, g).catch(err => {
-          console.error(err);
-          container.innerHTML = '';
-          container.style.color = '#f66';
-          container.style.padding = '14px';
-          container.textContent = 'No se pudo iniciar ScummVM: ' + err.message;
-          return null;
-        });
-        // En cuanto la ventana quede activa (foco de mouse/teclado), que
-        // el teclado apunte al iframe del juego, no al documento principal.
-        dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
-      } else {
-        container.style.color = '#f66';
-        container.style.padding = '14px';
-        container.textContent = 'No se pudo cargar el motor de ScummVM (js/scummvm-engine.js).';
-      }
-    } else if (g.bundle) {
-      body.classList.add('no-pad');
-      const container = document.createElement('div');
-      container.className = 'jsdos-container';
-      body.appendChild(container);
-      if (window.Dos) {
-        dosInstances[g.id] = Dos(container, {}).run(g.bundle);
-      } else {
-        container.style.color = '#f66';
-        container.style.padding = '14px';
-        container.textContent = 'No se pudo cargar js-dos (revisá la conexión a internet).';
-      }
+function toggleFullscreen() {
+    const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (!isFS) {
+        const req = screenWrap.requestFullscreen || screenWrap.webkitRequestFullscreen;
+        if (req) req.call(screenWrap);
     } else {
-      screen.style.display = 'block';
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) exit.call(document);
     }
-  }, lines.length * 260 + 300);
+}
+function updateFullscreenBtn() {
+    const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    btnFullscreen.textContent = isFS ? '✕' : '⛶';
+    btnFullscreen.title = isFS ? 'Exit Fullscreen' : 'Fullscreen';
+}
 
-  win.addEventListener('mousedown', () => focusWin(g.id));
-  win.querySelector('.win-btn.close').addEventListener('click', e => { e.stopPropagation(); closeWin(g.id); });
-  win.querySelector('.win-btn.max').addEventListener('click', e => { e.stopPropagation(); win.classList.toggle('maximized'); });
-  if (isScummvm) {
-    const menuBtn = win.querySelector('.win-btn.menu');
-    const fsBtn = win.querySelector('.win-btn.fs');
-    if (menuBtn) {
-      menuBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.openMenu) inst.openMenu(); });
-      });
+// ════════════════════════════════════════════
+//  MONTAR EMULADOR
+// ════════════════════════════════════════════
+function mountEmulator(romBuffer, romName) {
+    hideError();
+    if (typeof embedGenesis === 'undefined') {
+        showError('Engine not found: js/Genesis.min.js',
+            '→ Download from: https://github.com/lrusso/Genesis/raw/main/Genesis.min.js');
+        setStatus('Engine not found', 'err'); return;
     }
-    if (fsBtn) {
-      fsBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        // Pantalla completa "falsa" con CSS (.pseudo-fs), no la Fullscreen
-        // API real del navegador -- así ESC no se lo come el navegador
-        // para salir, y le sigue llegando entero al juego (ver nota en
-        // js/scummvm-engine.js). El botón [⛶] queda visible arriba de
-        // todo como única forma de entrar/salir.
-        win.classList.toggle('pseudo-fs');
-        const active = win.classList.contains('pseudo-fs');
-        fsBtn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa (ESC queda libre para el juego)';
-        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
-      });
+
+    lastROMName = romName;
+    splash.style.display = 'none';
+    emuContainer.style.display = 'block';
+    showLoader('LOADING ROM...');
+
+    try {
+        embedGenesis({
+            container: 'emuContainer',
+            name: romName,
+            rom: romBuffer,
+            soundEnabled: true,
+            showMobileControls: false,
+            // Usa el keymap actual (editable desde ⌨ Keyboard en "Ver Controles").
+            player1: {
+                up: keymap.up, down: keymap.down, left: keymap.left, right: keymap.right,
+                start: keymap.start, mode: keymap.mode,
+                a: keymap.a, b: keymap.b, c: keymap.c, x: keymap.x, y: keymap.y, z: keymap.z,
+            },
+            cbStarted: function () {
+                hideLoader();
+                emuRunning = true;
+                paused = false;
+                romNameEl.textContent = '▸ ' + romName;
+                setStatus('Playing: ' + romName, 'on');
+                enableButtons(false, true, true);
+                startFPS();
+                startGPPoll();
+            }
+        });
+    } catch (e) {
+        hideLoader();
+        splash.style.display = 'block';
+        emuContainer.style.display = 'none';
+        setStatus('Error loading ROM', 'err');
+        showError('Could not start emulator: ' + e.message);
     }
-  }
-  makeDraggable(win, win.querySelector('.titlebar'));
-
-  addRunningTab(g);
 }
 
-function addRunningTab(g) {
-  if (!runningEl) return;
-  const tab = document.createElement('div');
-  tab.className = 'running-tab active';
-  tab.dataset.id = g.id;
-  tab.textContent = g.name.toUpperCase() + '.EXE';
-  tab.addEventListener('click', () => {
-    const win = openWins[g.id];
-    if (!win) return;
-    if (win.style.display === 'none') { restoreWin(g.id); }
-    else if (parseInt(win.style.zIndex) === zTop) { minimizeWin(g.id); }
-    else { focusWin(g.id); }
-  });
-  runningEl.appendChild(tab);
+// ════════════════════════════════════════════
+//  CARGA DE ROM
+// ════════════════════════════════════════════
+function handleROMFile(file) {
+    if (!file) return;
+    hideError();
+    const reader = new FileReader();
+    reader.onload = ev => mountEmulator(ev.target.result, file.name);
+    reader.onerror = () => showError('Could not read the ROM file.');
+    reader.readAsArrayBuffer(file);
 }
 
-function focusWin(id) {
-  const win = openWins[id];
-  if (!win) return;
-  win.style.zIndex = ++zTop;
-  document.querySelectorAll('.running-tab').forEach(b => b.classList.toggle('active', b.dataset.id === id));
-  // Si es una ventana de ScummVM, devolverle el foco de teclado al iframe
-  // del juego (si no, el menú Ctrl+F5 / Guardar / Opciones no recibe nada).
-  if (dosInstances[id]) {
-    dosInstances[id].then(inst => { if (inst && inst.focus) inst.focus(); });
-  }
-}
-function minimizeWin(id) {
-  const win = openWins[id];
-  if (!win) return;
-  win.style.display = 'none';
-  const tab = runningEl ? runningEl.querySelector(`.running-tab[data-id="${id}"]`) : null;
-  if (tab) tab.classList.remove('active');
-}
-function restoreWin(id) {
-  const win = openWins[id];
-  if (!win) return;
-  win.style.display = 'flex';
-  focusWin(id);
-}
-function closeWin(id) {
-  const win = openWins[id];
-  if (win) win.remove();
-  delete openWins[id];
-  if (dosInstances[id]) {
-    // Tanto js-dos (CommandInterface) como el wrapper de ScummVM exponen
-    // una promesa que resuelve a un objeto con .exit() — mismo contrato,
-    // no hace falta bifurcar acá según el motor.
-    dosInstances[id].then(ci => { if (ci && ci.exit) ci.exit(); }).catch(() => { });
-    delete dosInstances[id];
-  }
-  const tab = runningEl ? runningEl.querySelector(`.running-tab[data-id="${id}"]`) : null;
-  if (tab) tab.remove();
+document.getElementById('romInput').addEventListener('change', e => {
+    handleROMFile(e.target.files[0]); e.target.value = '';
+});
+const drop = document.getElementById('fileDrop');
+drop.addEventListener('click', () => document.getElementById('romInput').click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); handleROMFile(e.dataTransfer.files[0]); });
+
+function loadPresetROM(url, displayName) {
+    if (!url) return;
+    hideError(); setStatus('Fetching ROM...', null);
+    fetch(url)
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(buf => mountEmulator(buf, displayName || url.split('/').pop()))
+        .catch(err => { showError('Could not load preset ROM.', err.message); setStatus('Load error', 'err'); });
 }
 
-function makeDraggable(win, handle) {
-  let dragging = false, ox = 0, oy = 0;
-  handle.addEventListener('mousedown', e => {
-    if (win.classList.contains('maximized')) return;
-    dragging = true;
-    ox = e.clientX - win.offsetLeft;
-    oy = e.clientY - win.offsetTop;
-  });
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    win.style.left = Math.max(0, e.clientX - ox) + 'px';
-    win.style.top = Math.max(0, e.clientY - oy) + 'px';
-  });
-  document.addEventListener('mouseup', () => dragging = false);
+// ════════════════════════════════════════════
+//  BOTONES
+// ════════════════════════════════════════════
+document.getElementById('btnPause').onclick = () => {
+    if (!emuRunning || paused) return;
+    paused = true; stopFPS(); stopGPPoll();
+    ledEl.className = 'led';
+    setStatus('Paused — press ▶ PLAY to continue', null);
+    document.getElementById('btnPause').textContent = '⏸ PAUSED';
+    enableButtons(true, false, true);
+    try { emuContainer.querySelector('canvas')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); } catch (_) { }
+};
+
+document.getElementById('btnPlay').onclick = () => {
+    if (!emuRunning || !paused) return;
+    paused = false;
+    setStatus('Playing: ' + lastROMName, 'on');
+    document.getElementById('btnPause').textContent = '⏸ PAUSE';
+    enableButtons(false, true, true); startFPS(); startGPPoll();
+    try { emuContainer.querySelector('canvas')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); } catch (_) { }
+};
+
+// STOP — recargar la página mata todo sin excepción
+document.getElementById('btnStop').onclick = () => location.reload();
+
+// ════════════════════════════════════════════
+//  POPUP DE CONTROLES
+// ════════════════════════════════════════════
+const overlay = document.getElementById('controlsOverlay');
+const btnOpen = document.getElementById('btnControls');
+const btnClose = document.getElementById('btnControlsClose');
+
+btnOpen.addEventListener('click', () => {
+    overlay.classList.add('open'); overlay.setAttribute('aria-hidden', 'false');
+    renderGPMap(); renderKeymapEditor();
+});
+btnClose.addEventListener('click', closeControls);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeControls(); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        if (listeningForKey) { cancelListenKeyboard(); return; }
+        if (listeningFor) { cancelListen(); return; }
+        if (overlay.classList.contains('open')) closeControls();
+    }
+});
+function closeControls() {
+    if (listeningFor) cancelListen();
+    if (listeningForKey) cancelListenKeyboard();
+    overlay.classList.remove('open'); overlay.setAttribute('aria-hidden', 'true');
 }
 
-/* ---------- LOAD ---------- */
-renderFkeys();
+// ── Tabs ──
+document.querySelectorAll('.ctrl-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.ctrl-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.ctrl-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.panel).classList.add('active');
+    });
+});
 
-fetch('data/games.json')
-  .then(r => r.json())
-  .then(data => {
-    GENRES = data.genres;
-    GAMES = data.games;
-    buildLeftItems();
-    if (LEFT_ITEMS.length) selectGenre(LEFT_ITEMS[0].id);
-    render();
-  })
-  .catch(err => {
-    panelRightList.innerHTML = '<div class="panel-row" style="color:#fff;padding:20px;">No se pudo cargar data/games.json. Si abriste el archivo directo (file://), corré un servidor local — ver README.md.</div>';
-    console.error(err);
-  });
+// ── Gamepad mapper ──
+let listeningFor = null, listenInterval = null;
+
+function renderGPMap() {
+    const gp = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(g => g?.connected);
+    const gpNameEl = document.getElementById('gpName');
+    if (gpNameEl) gpNameEl.textContent = gp ? gp.id.substring(0, 60) : 'No gamepad connected';
+    const list = document.getElementById('gpMapList');
+    if (!list) return;
+    list.innerHTML = '';
+    ACTIONS.forEach(action => {
+        const btnIndex = Object.keys(gpMap).find(k => gpMap[k] === action.id);
+        const row = document.createElement('div');
+        row.className = 'gpmap-row'; row.id = 'gprow-' + action.id;
+        row.innerHTML = `
+            <span class="gpmap-action">${action.label}</span>
+            <span class="gpmap-btn" id="gpbtn-${action.id}">${btnIndex !== undefined ? 'Button ' + btnIndex : '—'}</span>
+            <button class="gpmap-set" data-action="${action.id}">Set</button>`;
+        list.appendChild(row);
+    });
+    list.querySelectorAll('.gpmap-set').forEach(btn => btn.addEventListener('click', () => startListen(btn.dataset.action)));
+}
+
+function startListen(actionId) {
+    if (listeningFor) cancelListen();
+    if (listeningForKey) cancelListenKeyboard();
+    listeningFor = actionId;
+    const row = document.getElementById('gprow-' + actionId);
+    const btnEl = document.getElementById('gpbtn-' + actionId);
+    const setBtn = row.querySelector('.gpmap-set');
+    row.classList.add('gpmap-listening');
+    btnEl.textContent = 'Press button...';
+    setBtn.textContent = 'Cancel';
+    setBtn.onclick = cancelListen;
+    listenInterval = setInterval(() => {
+        const gp = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find(g => g?.connected);
+        if (!gp) return;
+        gp.buttons.forEach((btn, i) => {
+            if ((btn.pressed || btn.value > 0.5) && listeningFor) {
+                Object.keys(gpMap).forEach(k => { if (gpMap[k] === listeningFor) delete gpMap[k]; });
+                gpMap[i] = listeningFor;
+                saveGPMap(); cancelListen(); renderGPMap();
+            }
+        });
+    }, 50);
+}
+
+function cancelListen() {
+    if (listenInterval) { clearInterval(listenInterval); listenInterval = null; }
+    listeningFor = null; renderGPMap();
+}
+
+document.getElementById('btnGPReset')?.addEventListener('click', () => {
+    gpMap = { ...DEFAULT_GP_MAP }; saveGPMap(); renderGPMap();
+});
+
+// ── Editor de teclado — 2 columnas (D-Pad | Botones), editable ──
+let listeningForKey = null;
+
+function keymapRowHTML(action) {
+    return `
+        <div class="gpmap-row" id="kmrow-${action.id}">
+            <span class="gpmap-action">${action.label}</span>
+            <span class="gpmap-btn" id="kmbtn-${action.id}">${keyLabel(keymap[action.id])}</span>
+            <button class="gpmap-set" data-action="${action.id}">Set</button>
+        </div>`;
+}
+
+// Botones A/B/C/X/Y/Z — tarjeta compacta para la grilla de 3×2.
+function keymapButtonCardHTML(action) {
+    const shortLabel = action.id.toUpperCase();
+    return `
+        <div class="keymap-btn-card" id="kmrow-${action.id}">
+            <span class="keymap-btn-label">${shortLabel}</span>
+            <span class="gpmap-btn" id="kmbtn-${action.id}">${keyLabel(keymap[action.id])}</span>
+            <button class="gpmap-set" data-action="${action.id}">Set</button>
+        </div>`;
+}
+
+function renderKeymapEditor() {
+    const dpadList = document.getElementById('keymapDpadList');
+    const buttonsList = document.getElementById('keymapButtonsList');
+    const extraList = document.getElementById('keymapExtraList');
+    if (!dpadList || !buttonsList) return;
+
+    dpadList.innerHTML = ACTIONS.filter(a => DPAD_IDS.includes(a.id)).map(keymapRowHTML).join('');
+    buttonsList.innerHTML = ACTIONS.filter(a => BUTTON_IDS.includes(a.id)).map(keymapButtonCardHTML).join('');
+    if (extraList) extraList.innerHTML = ACTIONS.filter(a => EXTRA_IDS.includes(a.id)).map(keymapRowHTML).join('');
+
+    [dpadList, buttonsList, extraList].forEach(list => {
+        if (!list) return;
+        list.querySelectorAll('.gpmap-set').forEach(btn =>
+            btn.addEventListener('click', () => startListenKeyboard(btn.dataset.action)));
+    });
+}
+
+function startListenKeyboard(actionId) {
+    if (listeningForKey) cancelListenKeyboard();
+    if (listeningFor) cancelListen();
+    listeningForKey = actionId;
+    const row = document.getElementById('kmrow-' + actionId);
+    const btnEl = document.getElementById('kmbtn-' + actionId);
+    const setBtn = row?.querySelector('.gpmap-set');
+    const compact = row?.classList.contains('keymap-btn-card');
+    row?.classList.add('gpmap-listening');
+    if (btnEl) btnEl.textContent = compact ? '…' : 'Press a key...';
+    if (setBtn) { setBtn.textContent = 'Cancel'; setBtn.onclick = cancelListenKeyboard; }
+    document.addEventListener('keydown', keyCaptureHandler, true);
+}
+
+function keyCaptureHandler(e) {
+    if (!listeningForKey) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === 'Escape') { cancelListenKeyboard(); return; }
+    assignKeymapKey(listeningForKey, e.code);
+}
+
+function assignKeymapKey(actionId, code) {
+    // Si esa tecla ya estaba usada por otra acción, la deja sin asignar
+    // para evitar que dos acciones respondan a la misma tecla.
+    Object.keys(keymap).forEach(k => { if (k !== actionId && keymap[k] === code) keymap[k] = null; });
+    keymap[actionId] = code;
+    saveKeymap();
+    document.removeEventListener('keydown', keyCaptureHandler, true);
+    listeningForKey = null;
+    renderKeymapEditor();
+}
+
+function cancelListenKeyboard() {
+    document.removeEventListener('keydown', keyCaptureHandler, true);
+    listeningForKey = null;
+    renderKeymapEditor();
+}
+
+document.getElementById('btnKeymapReset')?.addEventListener('click', () => {
+    keymap = { ...DEFAULT_KEYMAP }; saveKeymap(); renderKeymapEditor();
+});
+
+// ════════════════════════════════════════════
+//  INICIO
+// ════════════════════════════════════════════
+(function init() {
+    const track = document.getElementById('romTrack');
+    if (track) track.innerHTML = `<div class="rom-page rom-empty-page"><p class="rom-empty">Cargando catálogo…</p></div>`;
+    loadGameLibrary();
+    renderKeymapEditor();
+    drawSplash();
+    if (typeof embedGenesis === 'undefined') {
+        setStatus('⚠ Missing js/Genesis.min.js — see README', 'err');
+        showError('Genesis.min.js not found in js/ folder.',
+            '→ Download: https://github.com/lrusso/Genesis/raw/main/Genesis.min.js');
+    }
+    enableButtons(false, false, false);
+})();
