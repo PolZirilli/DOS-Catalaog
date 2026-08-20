@@ -5,12 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DOSVAULT</title>
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<!-- VT323 queda como fallback web; la tipografía principal (PxPlus IBM VGA8,
+     modo texto VGA real) se auto-hospeda en css/fonts/ y se define via
+     @font-face en css/style.css. -->
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="js/vendor/js-dos/js-dos.css">
+<link rel="icon" href="favicon.png" type="image/png">
 </head>
 <body>
 
-<div id="mobileBlock">
+<div id="mobileBlock" class="modal-overlay">
   <div class="mb-dialog nc-frame">
     <div class="mb-titlebar">Aviso del sistema</div>
     <div class="mb-body">
@@ -29,19 +33,42 @@
   <div id="panels">
     <div class="panel nc-frame" id="panelLeft">
       <div class="panel-header" id="panelLeftHeader">C:\</div>
-      <div class="panel-cols"><div class="col-name">Nombre</div></div>
+      <div class="panel-cols">
+        <div class="col-name">Nombre</div>
+        <div class="col-size">Size</div>
+        <div class="col-date">Date</div>
+        <div class="col-time">Time</div>
+      </div>
       <div class="panel-list" id="panelLeftList"></div>
       <div class="panel-status" id="panelLeftStatus"></div>
     </div>
     <div class="panel nc-frame" id="panelRight">
       <div class="panel-header" id="panelRightHeader">C:\</div>
-      <div class="panel-cols"><div class="col-name">Nombre</div><div class="col-extra">Año</div></div>
+      <div class="panel-cols">
+        <div class="col-name">Nombre</div>
+        <div class="col-size">Size</div>
+        <div class="col-date">Date</div>
+        <div class="col-time">Time</div>
+      </div>
       <div class="panel-list" id="panelRightList"></div>
       <div class="panel-status" id="panelRightStatus"></div>
     </div>
   </div>
   <div id="cmdline">C:\&gt;<span class="cursor-blink"></span></div>
   <div id="fkeys"></div>
+</div>
+
+<!-- Popup de info de juego (F3): mismo estilo de dialogo NC que #mobileBlock.
+     El contenido de #infoModalBody lo arma js/app.js con datos de
+     Wikipedia/Wikidata (ver fetchWikiInfo en app.js). -->
+<div id="infoModal" class="modal-overlay">
+  <div class="mb-dialog nc-frame info-dialog">
+    <div class="mb-titlebar">Info del juego</div>
+    <div class="mb-body info-body" id="infoModalBody"></div>
+    <div class="info-buttons">
+      <span class="info-btn" id="infoModalClose">[ Cerrar ]</span>
+    </div>
+  </div>
 </div>
 
 <script src="js/vendor/js-dos/js-dos.js"></script>
