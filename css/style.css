@@ -170,7 +170,6 @@ body {
 
 .panel-row.is-dir .col-name {
   color: #55ffff;
-  font-weight: bold;
 }
 
 .panel-row.is-file .col-name {
