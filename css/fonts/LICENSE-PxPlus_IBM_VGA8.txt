@@ -1,0 +1,15 @@
+PxPlus IBM VGA8 (Web437_IBM_VGA_8x16 family)
+From "The Ultimate Oldschool PC Font Pack" by VileR
+https://int10h.org/oldschool-pc-fonts/
+
+Licensed under Creative Commons Attribution-ShareAlike 4.0 International
+(CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/
+
+You may freely share and adapt/transform/enhance this font for any purpose,
+including commercial use, as long as you credit VileR and link back to
+https://int10h.org/oldschool-pc-fonts/, and distribute any adaptation under
+a compatible license.
+
+File obtained (TTF form) from a public mirror of the pack:
+https://github.com/olikraus/u8g2/blob/master/tools/font/ttf/PxPlus_IBM_VGA8.ttf
+and converted locally to WOFF2 for web delivery.
