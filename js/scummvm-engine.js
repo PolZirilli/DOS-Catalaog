@@ -48,18 +48,22 @@ window.ScummVMEngine = (function () {
         // plano (mousedown) o después de togglear pantalla completa, para
         // que el teclado vuelva a apuntar al iframe en vez de quedarse en
         // el documento principal.
-        //
-        // NOTA sobre pantalla completa: a propósito NO usamos la
-        // Fullscreen API real del navegador (iframe.requestFullscreen())
-        // acá. El navegador reserva la tecla ESC para salir de pantalla
-        // completa real de forma no cancelable por JS -- eso pisaba el ESC
-        // que usan los juegos para saltear cinemáticas/menús (un solo ESC
-        // hacía las dos cosas a la vez). El toggle de pantalla completa
-        // "falsa" (clase CSS .pseudo-fs sobre la ventana) vive en app.js,
-        // que es quien controla el elemento .window; acá solo devolvemos
-        // el foco al iframe después del toggle.
         focus: () => {
           try { iframe.contentWindow.focus(); } catch (e) { /* ignorar */ }
+        },
+        // Pantalla completa real del navegador sobre el iframe (por eso el
+        // atributo "allow=fullscreen" / allowFullscreen más arriba). Antes
+        // se evitaba a propósito porque el navegador reserva ESC para
+        // salir de pantalla completa real de forma no cancelable por JS,
+        // y eso pisaba el ESC que usan los juegos para menús/cinemáticas.
+        // Ahora se prioriza la pantalla completa real; el trade-off es que
+        // un ESC te saca de pantalla completa en vez de llegarle al juego.
+        toggleFullscreen: () => {
+          if (document.fullscreenElement === iframe) {
+            document.exitFullscreen();
+          } else if (iframe.requestFullscreen) {
+            iframe.requestFullscreen().catch(err => console.warn('[scummvm] no se pudo entrar a pantalla completa', err));
+          }
         },
         // Simula Ctrl+F5 (Global Main Menu: Guardar/Cargar/Opciones) sin
         // depender de que el teclado físico lo mande bien (F5 suele estar
