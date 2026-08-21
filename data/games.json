@@ -251,13 +251,6 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/harddrivin.jsdos"
     },
     {
-      "id": "nascar",
-      "name": "NASCAR",
-      "genre": "race",
-      "year": "1990",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/nascar.jsdos"
-    },
-    {
       "id": "stunts",
       "name": "STUNTS",
       "genre": "race",
