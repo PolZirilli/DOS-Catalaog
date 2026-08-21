@@ -262,112 +262,112 @@
       "name": "ALIENCARNAGE",
       "genre": "platformer",
       "year": "1993",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/aliencarnage.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/aliencarnage.jsdos"
     },
     {
       "id": "blockout",
       "name": "BLOCKOUT",
       "genre": "arcade",
       "year": "1989",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/blockout.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/blockout.jsdos"
     },
     {
       "id": "ciscoheat",
       "name": "CISCOHEAT",
       "genre": "race",
       "year": "1991",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ciscoheat.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/ciscoheat.jsdos"
     },
     {
       "id": "gp2",
       "name": "GP2",
       "genre": "race",
       "year": "1996",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/gp2.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/gp2.jsdos"
     },
     {
       "id": "indy500",
       "name": "INDY500",
       "genre": "race",
       "year": "1989",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy500.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/indy500.jsdos"
     },
     {
       "id": "lamborghini",
       "name": "LAMBORGHINI",
       "genre": "race",
       "year": "1992",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/lamborghini.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/lamborghini.jsdos"
     },
     {
       "id": "lotus",
       "name": "LOTUS",
       "genre": "race",
       "year": "1992",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/lotus.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/lotus.jsdos"
     },
     {
       "id": "micromachines2",
       "name": "MICROMACHINES2",
       "genre": "race",
       "year": "1994",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/micromachines2.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/micromachines2.jsdos"
     },
     {
       "id": "needforspeed",
       "name": "NEEDFORSPEED",
       "genre": "race",
       "year": "1995",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/needforspeed.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/needforspeed.jsdos"
     },
     {
       "id": "quarantine2",
       "name": "QUARANTINE2",
       "genre": "accion",
       "year": "1995",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/quarantine2.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/quarantine2.jsdos"
     },
     {
       "id": "settlers2",
       "name": "SETTLERS2",
       "genre": "rts",
       "year": "1996",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/settlers2.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/settlers2.jsdos"
     },
     {
       "id": "testdrive2",
       "name": "TESTDRIVE2",
       "genre": "race",
       "year": "1989",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/testdrive2.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/testdrive2.jsdos"
     },
     {
       "id": "testdrive3",
       "name": "TESTDRIVE3",
       "genre": "race",
       "year": "1990",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/testdrive3.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/testdrive3.jsdos"
     },
     {
       "id": "themehospital",
       "name": "THEMEHOSPITAL",
       "genre": "sim",
       "year": "1997",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themehospital.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themehospital.jsdos"
     },
     {
       "id": "themepark",
       "name": "THEMEPARK",
       "genre": "sim",
       "year": "1994",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themepark.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themepark.jsdos"
     },
     {
       "id": "witchhaven2",
       "name": "WITCHHAVEN2",
       "genre": "fps",
       "year": "1996",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/witchhaven2.zip"
+      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/witchhaven2.jsdos"
     }
   ]
 }
