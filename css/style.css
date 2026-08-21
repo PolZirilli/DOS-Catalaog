@@ -148,9 +148,10 @@ body {
   display: flex;
   align-items: center;
   padding: 2px 2px;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   cursor: pointer;
   white-space: normal;
+  line-height: 1.4rem;
 }
 
 .panel-row .col-name {
@@ -704,7 +705,7 @@ body {
 
 .controls-row .cr-btn {
     background: #00000000;
-    color: #000000;
+    color: #ffffff;
     border: 0px solid #7ab0ff;
     padding: 4px 12px;
     cursor: pointer;
