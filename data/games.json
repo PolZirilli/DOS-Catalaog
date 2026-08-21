@@ -354,20 +354,6 @@
       "genre": "sim",
       "year": "1997",
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themehospital.jsdos"
-    },
-    {
-      "id": "themepark",
-      "name": "THEMEPARK",
-      "genre": "sim",
-      "year": "1994",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themepark.jsdos"
-    },
-    {
-      "id": "witchhaven2",
-      "name": "WITCHHAVEN2",
-      "genre": "fps",
-      "year": "1996",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/witchhaven2.jsdos"
     }
   ]
 }
