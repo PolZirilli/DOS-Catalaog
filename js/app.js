@@ -700,7 +700,8 @@ function launchGame(g) {
     <div class="titlebar">
       <div class="titlebar-title">${g.name.toUpperCase()}.EXE</div>
       <div class="win-controls">
-        ${isScummvm ? '<span class="win-btn menu" title="Menu ScummVM (Guardar/Cargar/Opciones)">[≡]</span><span class="win-btn fs" title="Pantalla completa (ESC queda libre para el juego)">[⛶]</span>' : ''}
+        ${isScummvm ? '<span class="win-btn menu" title="Menu ScummVM (Guardar/Cargar/Opciones)">[≡]</span>' : ''}
+        ${g.bundle ? '<span class="win-btn fs" title="Pantalla completa (ESC queda libre para el juego)">[⛶]</span>' : ''}
         <span class="win-btn max">[□]</span>
         <span class="win-btn close">[X]</span>
       </div>
@@ -766,6 +767,15 @@ function launchGame(g) {
       body.appendChild(container);
       if (window.Dos) {
         dosInstances[g.id] = Dos(container, {}).run(g.bundle);
+        // Los juegos de js-dos arrancan directo en pantalla completa: mismo
+        // mecanismo "pseudo-fs" ya usado en ScummVM (fixed + inset:0 por
+        // CSS, sin la Fullscreen API real del navegador), así ESC le sigue
+        // llegando entero al juego en vez de que el navegador se lo coma
+        // para salir de pantalla completa. El botón [⛶] de la titlebar
+        // permite salir/volver a entrar en cualquier momento.
+        win.classList.add('pseudo-fs');
+        const fsBtnEl = win.querySelector('.win-btn.fs');
+        if (fsBtnEl) fsBtnEl.title = 'Salir de pantalla completa';
       } else {
         container.style.color = '#f66';
         container.style.padding = '14px';
@@ -781,27 +791,28 @@ function launchGame(g) {
   win.querySelector('.win-btn.max').addEventListener('click', e => { e.stopPropagation(); win.classList.toggle('maximized'); });
   if (isScummvm) {
     const menuBtn = win.querySelector('.win-btn.menu');
-    const fsBtn = win.querySelector('.win-btn.fs');
     if (menuBtn) {
       menuBtn.addEventListener('click', e => {
         e.stopPropagation();
         if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.openMenu) inst.openMenu(); });
       });
     }
-    if (fsBtn) {
-      fsBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        // Pantalla completa "falsa" con CSS (.pseudo-fs), no la Fullscreen
-        // API real del navegador -- así ESC no se lo come el navegador
-        // para salir, y le sigue llegando entero al juego (ver nota en
-        // js/scummvm-engine.js). El botón [⛶] queda visible arriba de
-        // todo como única forma de entrar/salir.
-        win.classList.toggle('pseudo-fs');
-        const active = win.classList.contains('pseudo-fs');
-        fsBtn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa (ESC queda libre para el juego)';
-        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
-      });
-    }
+  }
+  // Botón [⛶] de pantalla completa: aplica tanto a js-dos (que ahora
+  // arranca directo en pseudo-fs, ver más arriba) como a ScummVM. Pantalla
+  // completa "falsa" con CSS (.pseudo-fs), no la Fullscreen API real del
+  // navegador -- así ESC no se lo come el navegador para salir, y le sigue
+  // llegando entero al juego (ver nota en js/scummvm-engine.js). El botón
+  // queda visible arriba de todo como única forma de entrar/salir.
+  const fsBtn = win.querySelector('.win-btn.fs');
+  if (fsBtn) {
+    fsBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      win.classList.toggle('pseudo-fs');
+      const active = win.classList.contains('pseudo-fs');
+      fsBtn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa (ESC queda libre para el juego)';
+      if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
+    });
   }
   makeDraggable(win, win.querySelector('.titlebar'));
 
