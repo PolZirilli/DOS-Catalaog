@@ -16,6 +16,12 @@ let currentGenre = null;
 const state = { focus: 'left', leftIndex: 0, rightIndex: 0 };
 const openWins = {};
 const dosInstances = {};
+// Referencia directa a `.layers` de cada instancia de js-dos (ver
+// launchGame). Se guarda aparte de dosInstances porque dosInstances guarda
+// la PROMISE de .run(), y layers.toggleFullscreen() está disponible antes
+// de que esa promise resuelva -- es una propiedad sincrónica de la
+// instancia devuelta por Dos(container, {}).
+const dosLayers = {};
 let zTop = 100;
 
 const panelLeftList = document.getElementById('panelLeftList');
@@ -766,16 +772,30 @@ function launchGame(g) {
       container.className = 'jsdos-container';
       body.appendChild(container);
       if (window.Dos) {
-        dosInstances[g.id] = Dos(container, {}).run(g.bundle);
-        // Los juegos de js-dos arrancan directo en pantalla completa: mismo
-        // mecanismo "pseudo-fs" ya usado en ScummVM (fixed + inset:0 por
-        // CSS, sin la Fullscreen API real del navegador), así ESC le sigue
-        // llegando entero al juego en vez de que el navegador se lo coma
-        // para salir de pantalla completa. El botón [⛶] de la titlebar
-        // permite salir/volver a entrar en cualquier momento.
+        // OJO: Dos(container, {}) devuelve la instancia en sí (sincrónico);
+        // .run(bundle) es lo asincrónico. Hay que quedarse con la
+        // instancia ANTES de encadenar .run(), porque instance.layers
+        // (con .toggleFullscreen()) es una propiedad que ya existe desde
+        // el constructor, no algo que aparece recién cuando .run() resuelve.
+        const dosInstance = Dos(container, {});
+        dosLayers[g.id] = dosInstance.layers;
+        dosInstances[g.id] = dosInstance.run(g.bundle);
+        // Arranca en modo "ventana grande" (ocupa el browser, no todavía
+        // el monitor): pseudo-fs por CSS, sin tocar la Fullscreen API real
+        // todavía. La pantalla completa real del MONITOR se pide recién
+        // cuando el usuario clickea el botón [⛶] (ver más abajo) -- el
+        // navegador no permite invocar requestFullscreen() fuera de un
+        // gesto directo del usuario, así que no se puede auto-activar sola
+        // al arrancar el juego.
         win.classList.add('pseudo-fs');
         const fsBtnEl = win.querySelector('.win-btn.fs');
-        if (fsBtnEl) fsBtnEl.title = 'Salir de pantalla completa';
+        if (fsBtnEl) fsBtnEl.title = 'Pantalla completa real (ESC para salir)';
+        // Mantiene el título del botón sincronizado si el usuario sale de
+        // pantalla completa apretando ESC directamente (en vez de clickear
+        // el botón).
+        dosLayers[g.id].setOnFullscreen(active => {
+          if (fsBtnEl) fsBtnEl.title = active ? 'Salir de pantalla completa (ESC)' : 'Pantalla completa real (ESC para salir)';
+        });
       } else {
         container.style.color = '#f66';
         container.style.padding = '14px';
@@ -798,19 +818,25 @@ function launchGame(g) {
       });
     }
   }
-  // Botón [⛶] de pantalla completa: aplica tanto a js-dos (que ahora
-  // arranca directo en pseudo-fs, ver más arriba) como a ScummVM. Pantalla
-  // completa "falsa" con CSS (.pseudo-fs), no la Fullscreen API real del
-  // navegador -- así ESC no se lo come el navegador para salir, y le sigue
-  // llegando entero al juego (ver nota en js/scummvm-engine.js). El botón
-  // queda visible arriba de todo como única forma de entrar/salir.
+  // Botón [⛶] de pantalla completa: pide la Fullscreen API REAL del
+  // navegador (el monitor entero, sin barra de direcciones ni pestañas).
+  // Antes esto togleaba solo una clase CSS (.pseudo-fs) para esquivar el
+  // hecho de que el navegador reserva ESC para salir de pantalla completa
+  // de forma no cancelable por JS -- pero eso significaba que nunca se
+  // salía realmente del browser. Ahora entramos a pantalla completa de
+  // verdad; el trade-off inevitable es que ESC va a salir de pantalla
+  // completa en vez de llegarle al juego (así lo exige el estándar, no
+  // hay forma de evitarlo). Al salir, la ventana vuelve a pseudo-fs
+  // (llena el browser) en vez de al tamaño chico original.
   const fsBtn = win.querySelector('.win-btn.fs');
   if (fsBtn) {
     fsBtn.addEventListener('click', e => {
       e.stopPropagation();
-      win.classList.toggle('pseudo-fs');
-      const active = win.classList.contains('pseudo-fs');
-      fsBtn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa (ESC queda libre para el juego)';
+      if (isScummvm) {
+        if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.toggleFullscreen) inst.toggleFullscreen(); });
+      } else if (dosLayers[g.id]) {
+        dosLayers[g.id].toggleFullscreen();
+      }
       if (dosInstances[g.id]) dosInstances[g.id].then(inst => { if (inst && inst.focus) inst.focus(); });
     });
   }
