@@ -328,13 +328,6 @@
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/quarantine2.jsdos"
     },
     {
-      "id": "settlers2",
-      "name": "SETTLERS2",
-      "genre": "rts",
-      "year": "1996",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/settlers2.jsdos"
-    },
-    {
       "id": "testdrive2",
       "name": "TESTDRIVE2",
       "genre": "race",
@@ -347,13 +340,6 @@
       "genre": "race",
       "year": "1990",
       "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/testdrive3.jsdos"
-    },
-    {
-      "id": "themehospital",
-      "name": "THEMEHOSPITAL",
-      "genre": "rts",
-      "year": "1997",
-      "bundle": "https://pub-13140bd15eda49b4a3f35bc937ab1c58.r2.dev/projects/dosvault/themehospital.jsdos"
     }
   ]
 }
