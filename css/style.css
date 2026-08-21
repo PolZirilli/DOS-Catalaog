@@ -148,9 +148,10 @@ body {
   display: flex;
   align-items: center;
   padding: 2px 2px;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   cursor: pointer;
   white-space: normal;
+  line-height: 1.4rem;
 }
 
 .panel-row .col-name {
@@ -515,16 +516,16 @@ body {
 }
 
 .mb-titlebar {
-    background: #0000aa00;
-    color: #fff;
-    font-size: 1.4rem;
-    font-weight: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-bottom: 6px double #fff;
-    text-transform: uppercase;
-    line-height: 4rem;
+  background: #0000aa00;
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 6px double #fff;
+  text-transform: uppercase;
+  line-height: 4rem;
 }
 
 .mb-body {
@@ -664,10 +665,10 @@ body {
 
 /* ---------- POPUP DE CONTROLES (F2) ---------- */
 .controls-dialog {
-    width: 100%;
-    max-width: 620px;
-    background: #00aaaa;
-    color: white;
+  width: 100%;
+  max-width: 620px;
+  background: #00aaaa;
+  color: white;
 }
 
 .controls-body {
@@ -726,14 +727,14 @@ body {
 }
 
 .controls-row .cr-btn {
-    background: #00000000;
-    color: #000000;
-    border: 0px solid #7ab0ff;
-    padding: 4px 12px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    white-space: nowrap;
-    flex-shrink: 0;
+  background: #00000000;
+  color: #000000;
+  border: 0px solid #7ab0ff;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .controls-row .cr-btn:hover {
